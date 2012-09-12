@@ -1,0 +1,18 @@
+* we are not a G-Code validator, input must be well formed. We will fathom the 
+  widest possible extent of G-Code in use in the wild, but we will neither
+  check nor fix your spelling.
+* not more than 65536 lines per G-Code file
+* machine coordinate system is in mm
+* machine display/conceptual precision is 10um
+* A,B,C have integer precision in degrees
+* F has integer precision in mm/min
+* all display and save/restore of doubles is in %4.2f format
+* since this is a mill, we assume we'll never see the E word. If this changes,
+  we'll need to change strtod() not to think "<some digits>E<some digits>" is
+  scientific notation.
+* we now use the seekable stream model but do not parse the whole file at the
+  beginning to extract O words which, in effect, means that we can only call
+  things we have already seen (and executed). Fix this shit!
+* integers must be integers, no G00.0000000 garbage.
+* surprisingly, gcode-machine should poll overrides and dynamically apply any
+  changes.
