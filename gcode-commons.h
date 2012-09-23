@@ -28,5 +28,17 @@
 #define GCODE_TOOL_DIAM_BASE 3300
 #define GCODE_TOOL_LEN_BASE 3400
 
+/* Well known parameter numbers */
+#define GCODE_PARM_FEED_HOME_X 2001
+#define GCODE_PARM_FEED_HOME_Y 2002
+#define GCODE_PARM_FEED_HOME_Z 2003
+#define GCODE_PARM_FIRST_WCS 5221
+#define GCODE_PARM_WCS_SIZE 20
+
+/* How many nested macro calls we support */
+#define GCODE_MACRO_COUNT 16
+/* How many nested subprogram calls we support */
+#define GCODE_SUBPROGRAM_COUNT 16
+
 
 #endif /* GCODE_COMMONS_H_ */

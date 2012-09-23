@@ -11,7 +11,6 @@
 #include "gcode-commons.h"
 #include "gcode-machine.h"
 #include "gcode-debugcon.h"
-#include "gcode-parameters.h"
 
 
 static double machineX, machineY, machineZ;
@@ -39,23 +38,32 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
 }
 
 bool move_machine_arc(double X, double Y, double Z, double I, double J, double K, double R, bool ccw, TGCodePlaneMode plane, TGCodeFeedMode feedMode, uint16_t F) {
-  //TODO: The Book, p.238: "If both the arc modifiers IJK and the radius R are programmed in the same block, the radius value takes priority, regardless of the order."
-  // I,J,K *always* relative to the beginning of the arc
-  //TODO: if (X,Y,Z) == (machineX,machineY,machineZ), this is a full circle. Act accordingly.
-  if(isnan(R)) R = hypot(I, J);
-  else if(isnan(I) && isnan(J)) {
+  //TODO: implement planes, for now assumes always XY
+  if(!isnan(R)) {
     double d = hypot(machineX - X, machineY - Y);
-    I = machineX + (X - machineX) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
-    J = machineY + (Y - machineY) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
+    I = (X - machineX) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
+    J = (Y - machineY) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
+  } else R = hypot(I, J);
+  GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
+      I, J, K, R, (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, F);
+  if(!isnan(Z)) {
+    GCODE_DEBUG("Has helical component to Z=%4.2fmm", Z);
+    machineZ = Z;
   }
-  GCODE_DEBUG("Circular move C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm", I, J, K, R);
 
-  /*double As = atan2(J, I);
+  /*
+  if full circle { As = 0, Af = pi } { As = pi, Af = 0 }
+  else:
+
+  double As = atan2(J, I);
   double Af = atan2(Y - (machineY + J), X - (machineX + I));
+
   double time = fabs(Af - As) * R / F; // time in same units as F
   double quanta = time / 100;
   double t = 0.0;
 
+  I += machineX;
+  J += machineY;
   while(t < time) {
    machineX = I + R * cos(As + (ccw ? 1 : -1) * ((F / R) * t));
    machineY = J + R * sin(As + (ccw ? 1 : -1) * ((F / R) * t));
@@ -133,7 +141,7 @@ bool set_spindle_speed_machine(uint32_t speed) {
   spindleSpeed = speed;
 
   if(currentMachineState.spindleCW || currentMachineState.spindleCCW) GCODE_DEBUG("Spindle now rotating at %5drpm", spindleSpeed)
-  else GCODE_DEBUG("Spindle speet preset at %5drpm", spindleSpeed);
+  else GCODE_DEBUG("Spindle speed preset at %5drpm", spindleSpeed);
 
   return true;
 }

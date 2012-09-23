@@ -11,14 +11,6 @@
 
 #include "gcode-commons.h"
 
-#define GCODE_PARM_FEED_HOME_X 2001
-#define GCODE_PARM_FEED_HOME_Y 2002
-#define GCODE_PARM_FEED_HOME_Z 2003
-#define GCODE_PARM_FEED_HOME_A 2004
-#define GCODE_PARM_FEED_HOME_B 2005
-#define GCODE_PARM_FEED_HOME_C 2006
-
-
 /* Initialize parameter store, takes anonymous pointer to opaque data store, returns true on success */
 bool init_parameters(void *data);
 /* Fetch parameter index as double (according to the standard, all are double) */

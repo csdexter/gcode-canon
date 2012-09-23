@@ -9,7 +9,8 @@
 #define GCODE_STATE_H_
 
 
-#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #include "gcode-commons.h"
 
@@ -19,9 +20,9 @@ typedef enum {
   RAPID,
   LINEAR,
   ARC,
-  CIRCLE,
   CYCLE,
-  STORE
+  STORE,
+  MACRO
 } TGCodeMotionMode;
 
 typedef enum {
@@ -257,7 +258,7 @@ bool init_gcode_state(void *data);
  * gcode-input. Returns false on error */
 bool update_gcode_state(char *line);
 /* Read from line and interpret as number transparently handling parameter
- * references; return number and advance line past */
+ * references; return number */
 double read_gcode_real(char *line);
 uint32_t read_gcode_integer(char *line);
 /* If called with 2 arguments and argc of 0, return true if said word was

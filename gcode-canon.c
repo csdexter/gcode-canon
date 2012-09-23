@@ -24,6 +24,7 @@ int main(void) {
 
   init_machine(NULL);
   init_parameters(parFile);
+  init_stacks(NULL);
   init_tools(NULL);
   init_input(stdin);
   init_gcode_state(NULL);
@@ -32,6 +33,7 @@ int main(void) {
 
   done_input();
   done_tools();
+  done_stacks();
   done_parameters();
   done_machine();
 

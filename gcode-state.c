@@ -5,11 +5,12 @@
  *      Author: csdexter
  */
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
 #include <limits.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "gcode-commons.h"
 #include "gcode-state.h"
@@ -19,6 +20,7 @@
 #include "gcode-machine.h"
 #include "gcode-tools.h"
 #include "gcode-math.h"
+#include "gcode-stacks.h"
 
 static TGCodeWordCache parseCache;
 
@@ -201,12 +203,71 @@ bool update_gcode_state(char *line) {
     }
   }
   if((arg = have_gcode_word('M', 3, GCODE_SPINDLE_ORIENTATION, GCODE_INDEXER_STEP, GCODE_RETRACT_Z))) move_machine_aux(arg, get_gcode_word_integer('P'));
+  if(have_gcode_word('G', 1, 65)) {
+    currentGCodeState.motionMode = MACRO;
+    currentGCodeState.macroCall = true;
+  }
   /* Sequence point: we read the axis words here and do the WCS math. All axis-word-eating commands MUST be above this line and set axisWordsConsumed to true.
-   * Everything below this line will use whatever results from pushing the axis word arguments through the current coordinate transformation */
+   * Everything below this line will use whatever results from pushing the axis word arguments through the current coordinate transformation. */
   if(!currentGCodeState.axisWordsConsumed) {
     /* if a cycle, then X,Y,Z,R must be translated. If absolute, translate as for normal moves; if incremental, translate X,Y as absolute and Z,R as incremental */
-    if(currentGCodeState.motionMode == CYCLE) do_WCS_cycle_math(&currentGCodeState.system, get_gcode_word_real('X'), get_gcode_word_real('Y'), get_gcode_word_real('Z'), currentGCodeState.R);
-    else if (!(currentGCodeState.motionMode == OFF || currentGCodeState.motionMode == STORE)) do_WCS_move_math(&currentGCodeState.system, get_gcode_word_real('X'), get_gcode_word_real('Y'), get_gcode_word_real('Z'));
+    switch(currentGCodeState.motionMode) {
+      case CYCLE:
+        do_WCS_cycle_math(&currentGCodeState.system, get_gcode_word_real('X'), get_gcode_word_real('Y'), get_gcode_word_real('Z'), currentGCodeState.R);
+        break;
+      case STORE:
+        switch(get_gcode_word_integer('L')) {
+          case 2: {
+            uint16_t wcs = (get_gcode_word_integer('P') - 1) * GCODE_PARM_WCS_SIZE;
+            double offset;
+
+            offset = get_gcode_word_real('X');
+            update_parameter(GCODE_PARM_FIRST_WCS + wcs + 0, (isnan(offset) ? currentGCodeState.system.X : offset));
+            offset = get_gcode_word_real('Y');
+            update_parameter(GCODE_PARM_FIRST_WCS + wcs + 1, (isnan(offset) ? currentGCodeState.system.Y : offset));
+            offset = get_gcode_word_real('Z');
+            update_parameter(GCODE_PARM_FIRST_WCS + wcs + 2, (isnan(offset) ? currentGCodeState.system.Z : offset));
+            commit_parameters();
+          } break;
+          case 3: {
+            uint8_t tool = get_gcode_word_integer('P');
+
+            if(have_gcode_word('H', 0)) update_parameter(GCODE_TOOL_LEN_BASE + tool, get_gcode_word_real('H'));
+            if(have_gcode_word('D', 0)) update_parameter(GCODE_TOOL_DIAM_BASE + tool, get_gcode_word_real('D'));
+            commit_parameters();
+          } break;
+          default:
+            break;
+        }
+        break;
+      case MACRO:
+        stacks_push_parameters();
+        update_parameter(1, get_gcode_word_real('A'));
+        update_parameter(2, get_gcode_word_real('B'));
+        update_parameter(3, get_gcode_word_real('C'));
+        update_parameter(4, get_gcode_word_real('I'));
+        update_parameter(5, get_gcode_word_real('J'));
+        update_parameter(6, get_gcode_word_real('K'));
+        update_parameter(7, get_gcode_word_real('D'));
+        update_parameter(11, get_gcode_word_real('H'));
+        update_parameter(12, get_gcode_word_real('L'));
+        update_parameter(16, get_gcode_word_real('P'));
+        update_parameter(17, get_gcode_word_real('Q'));
+        update_parameter(18, get_gcode_word_real('R'));
+        update_parameter(21, get_gcode_word_real('U'));
+        update_parameter(22, get_gcode_word_real('V'));
+        update_parameter(23, get_gcode_word_real('W'));
+        update_parameter(24, get_gcode_word_real('X'));
+        update_parameter(25, get_gcode_word_real('Y'));
+        update_parameter(26, get_gcode_word_real('Z'));
+        commit_parameters();
+        break;
+      case OFF:
+        break;
+      default:
+        do_WCS_move_math(&currentGCodeState.system, get_gcode_word_real('X'), get_gcode_word_real('Y'), get_gcode_word_real('Z'));
+        break;
+    }
   } else currentGCodeState.axisWordsConsumed = false;
   switch(currentGCodeState.motionMode) {
     case RAPID:
@@ -216,16 +277,11 @@ bool update_gcode_state(char *line) {
       move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.feedMode, currentGCodeState.F);
       break;
     case ARC:
-    case CIRCLE:
-      //TODO: investigate whether its work explicitly signaling a circle (i.e. do we want to support null arcs?)
       //TODO: investigate whether to treat full-circle feed as a cycle and add repeat count
       move_machine_arc(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.I, currentGCodeState.J, currentGCodeState.K, currentGCodeState.R, currentGCodeState.ccw, currentGCodeState.system.plane, currentGCodeState.feedMode, currentGCodeState.F);
       break;
     case CYCLE:
       move_machine_cycle(currentGCodeState.cycle, currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.retractMode, currentGCodeState.L, currentGCodeState.P, currentGCodeState.Q, currentGCodeState.R, currentGCodeState.feedMode, currentGCodeState.F);
-      break;
-    case STORE:
-      /* Data entry comes here */
       break;
     default:
       /*NOP*/;
@@ -235,32 +291,31 @@ bool update_gcode_state(char *line) {
     select_pathmode_machine(currentGCodeState.oldPathMode);
     currentGCodeState.nonModalPathMode = false;
   }
-  if(have_gcode_word('G', 1, 65)) {
-    currentGCodeState.macroCall = true;
-    /* Macro call comes here */
-  }
   if((arg = have_gcode_word('M', 10, GCODE_STOP_COMPULSORY, GCODE_STOP_OPTIONAL, GCODE_STOP_END, GCODE_SERVO_ON, GCODE_SERVO_OFF, GCODE_STOP_RESET, GCODE_STOP_E, GCODE_APC_1, GCODE_APC_2, GCODE_APC_SWAP)))
     /* Machine stop comes here */;
   /* Read, update and commit parameters comes here */
   if(have_gcode_word('M', 1, 47)) rewind_input();
   if(have_gcode_word('M', 1, 98)) {
-    /* Push(tell) */
-    /* Seek(P) */
-    /* Push(tell) */
-    currentGCodeState.repeat = get_gcode_word_integer('L');
+    //TODO: support nested repeats as well
+    currentGCodeState.repeat = (have_gcode_word('L', 0) ? get_gcode_word_integer('L'): 1);
+    stacks_push_program(tell_input(), currentGCodeState.macroCall);
+    //TODO: implement O word indexing in input and replace P with offset_of(P)
+    seek_input_line(get_gcode_word_integer('P'));
+    currentGCodeState.macroCall = false;
+    stacks_push_program(tell_input(), currentGCodeState.macroCall);
   }
   if(have_gcode_word('M', 1, 99)) {
-     if(currentGCodeState.repeat) {
-       currentGCodeState.repeat--;
-       /* Seek(Peek()) */
-     } else {
-       /* Pop() */
-       /* Seek(Pop()) */
-       if(currentGCodeState.macroCall) {
-         currentGCodeState.macroCall = false;
-         /* Pop() */
-       }
-     }
+    if(currentGCodeState.repeat) {
+      currentGCodeState.repeat--;
+      seek_input_line(stacks_peek_program());
+    } else {
+      stacks_pop_program(&currentGCodeState.macroCall);
+      seek_input_line(stacks_pop_program(&currentGCodeState.macroCall));
+      if(currentGCodeState.macroCall) {
+        currentGCodeState.macroCall = false;
+        stacks_pop_parameters();
+      }
+    }
   }
 
 /**
