@@ -10,8 +10,8 @@
 
 #include <libgen.h>
 
-#define GCODE_DEBUG(...) printf("[%s](%s@%d): ", basename(__FILE__), __FUNCTION__, __LINE__); \
-	printf(__VA_ARGS__); \
-	printf("\n")
+#define GCODE_DEBUG(...) { printf("[%s](%s@%d): ", basename(__FILE__), __FUNCTION__, __LINE__); \
+  printf(__VA_ARGS__); \
+  printf("\n"); }
 
 #endif /* GCODE_DEBUGCON_H_ */

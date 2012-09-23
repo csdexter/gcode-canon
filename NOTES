@@ -4,7 +4,6 @@
 * not more than 65536 lines per G-Code file
 * machine coordinate system is in mm
 * machine display/conceptual precision is 10um
-* A,B,C have integer precision in degrees
 * F has integer precision in mm/min
 * all display and save/restore of doubles is in %4.2f format
 * since this is a mill, we assume we'll never see the E word. If this changes,

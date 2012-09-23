@@ -11,8 +11,8 @@
 #include "gcode-commons.h"
 
 typedef struct {
-	uint16_t offset;
-	uint16_t program;
+  uint16_t offset;
+  uint16_t program;
 } TGCodeProgramIndexEntry;
 
 

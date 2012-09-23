@@ -17,22 +17,22 @@
 #define GCODE_MACHINE_FEED_TRAVERSE 0xFFFFU /* 1092.25mm/sec, none of the hardware we're targeting is that fast so safe to use as flag */
 
 typedef union {
-	uint8_t flags;
-	struct {
-		uint8_t probeSource:1;
-		uint8_t probeMode:1;
-		uint8_t mirrorX:1;
-		uint8_t mirrorY:1;
-		uint8_t overridesEnabled:1;
-		uint8_t spindleCW:1;
-		uint8_t spindleCCW:1;
-		uint8_t exactStopCheck:1;
-	};
+  uint8_t flags;
+  struct {
+    uint8_t probeSource:1;
+    uint8_t probeMode:1;
+    uint8_t mirrorX:1;
+    uint8_t mirrorY:1;
+    uint8_t overridesEnabled:1;
+    uint8_t spindleCW:1;
+    uint8_t spindleCCW:1;
+    uint8_t exactStopCheck:1;
+  };
 } TGCodeMachineState;
 
 bool init_machine(void *data);
 /* Move to X,Y,Z-A,B,C at speed F. All axes move simultaneously for linear interpolation */
-bool move_machine_line(double X, double Y, double Z, uint16_t A, uint16_t B, uint16_t C, TGCodeFeedMode feedMode, uint16_t F);
+bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, uint16_t F);
 /* Move to X,Y,Z following an arc with the center at I,J,K, radius R and running
  * CCW if ccw is true, CW otherwise. Usually, one of I,J,K or R will be NaN so
  * the other will be extrapolated. CW/CCW is decided looking towards the
@@ -42,6 +42,8 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
 bool move_machine_cycle(TGCodeCycleMode mode, double X, double Y, double Z, TGCodeRetractMode retract, uint16_t L, double P, double Q, double R, TGCodeFeedMode feedMode, uint16_t F);
 /* Executes either home & recalibrate, go to zero or return from zero going through the point specified if any */
 bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z);
+/* Executes auxiliary movements (spindle orientation, indexer and Z retract) */
+bool move_machine_aux(TGCodeAuxiliaryMachine mode, uint32_t P);
 /* Start the spindle in the indicated direction or stop it. If there was no previous call to set_spindle_speed_machine(),
  * spindle will run at the lowest achievable speed. Returns false if spindle is already started. */
 bool start_spindle_machine(TGCodeSpindleMode direction);

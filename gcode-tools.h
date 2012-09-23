@@ -11,24 +11,24 @@
 #include "gcode-commons.h"
 
 typedef enum {
-	GCODE_TOOL_UNDEFINED = -10,
-	GCODE_TOOL_DRILL = -11,
-	GCODE_TOOL_TAP = -12,
-	GCODE_TOOL_BORE = -13,
-	GCODE_TOOL_MILL = -14,
-	GCODE_TOOL_FACEMILL = -15,
-	GCODE_TOOL_BALLEND = -16,
-	GCODE_TOOL_BACKSPOTFACE = -17,
-	GCODE_TOOL_PROBE = -18,
-	GCODE_TOOL_GUNDRILL = -19
+  GCODE_TOOL_UNDEFINED = -10,
+  GCODE_TOOL_DRILL = -11,
+  GCODE_TOOL_TAP = -12,
+  GCODE_TOOL_BORE = -13,
+  GCODE_TOOL_MILL = -14,
+  GCODE_TOOL_FACEMILL = -15,
+  GCODE_TOOL_BALLEND = -16,
+  GCODE_TOOL_BACKSPOTFACE = -17,
+  GCODE_TOOL_PROBE = -18,
+  GCODE_TOOL_GUNDRILL = -19
 } TGCodeToolType;
 
 typedef struct {
-	uint8_t index;
-	TGCodeToolType type;
-	double diameter;
-	double length;
-	/* Other/extended information would go here */
+  uint8_t index;
+  TGCodeToolType type;
+  double diameter;
+  double length;
+  /* Other/extended information would go here */
 } TGCodeTool;
 
 /* Initialize the tool engine, takes an opaque pointer to a data store/effector, returns true if all ok */
