@@ -73,10 +73,6 @@ bool stacks_pop_program(TProgramPointer *state) {
   } else return false;
 }
 
-void stacks_peek_program(TProgramPointer *state) {
-  if(state) *state = *(programStack[prSP]);
-}
-
 bool done_stacks(void) {
   GCODE_DEBUG("Stacks done");
 

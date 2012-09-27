@@ -30,8 +30,6 @@ bool stacks_push_program(const TProgramPointer *state);
 bool stacks_pop_parameters(void);
 /* Pops current state of program */
 bool stacks_pop_program(TProgramPointer *state);
-/* Peeks current state of program */
-void stacks_peek_program(TProgramPointer *state);
 bool done_stacks(void);
 
 #endif /* GCODE_STACKS_H_ */
