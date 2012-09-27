@@ -239,7 +239,6 @@ typedef struct {
   bool nonModalPathMode;
   TGCodeCycleMode cycle;
   bool macroCall;
-  uint16_t repeat;
   bool axisWordsConsumed;
   bool ccw;
   double I, J, K, P, Q, R;

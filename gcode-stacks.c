@@ -40,12 +40,11 @@ bool stacks_push_parameters(void) {
   } else return false;
 }
 
-bool stacks_push_program(uint16_t pointer, bool macro) {
+bool stacks_push_program(const TProgramPointer *state) {
   if(prSP < GCODE_SUBPROGRAM_COUNT - 1) {
     TProgramPointer *pptr = (TProgramPointer *)malloc(sizeof(TProgramPointer));
 
-    pptr->programCounter = pointer;
-    pptr->macroCall = macro;
+    *pptr = *state;
     programStack[++prSP] = pptr;
 
     return true;
@@ -65,20 +64,17 @@ bool stacks_pop_parameters(void) {
   } else return false;
 }
 
-uint16_t stacks_pop_program(bool *macro) {
-  if(prSP) {
-    TProgramPointer *pptr = programStack[prSP--];
-    uint16_t ptr = pptr->programCounter;
+bool stacks_pop_program(TProgramPointer *state) {
+  if(prSP && state) {
+    *state = *(programStack[prSP--]);
+    free(programStack[prSP + 1]);
 
-    *macro = pptr->macroCall;
-    free(pptr);
-
-    return ptr;
-  } else return -1;
+    return true;
+  } else return false;
 }
 
-uint16_t stacks_peek_program(void) {
-  return programStack[prSP]->programCounter;
+void stacks_peek_program(TProgramPointer *state) {
+  if(state) *state = *(programStack[prSP]);
 }
 
 bool done_stacks(void) {

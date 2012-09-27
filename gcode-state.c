@@ -24,34 +24,77 @@
 
 static TGCodeWordCache parseCache;
 
-/*const TGCodeState defaultGCodeState = {
-  0,
-  GCODE_MODE_G00,
-  GCODE_MODE_G17,
-  GCODE_MODE_G91,
-  GCODE_MODE_G94,
-  GCODE_MODE_G21,
-  GCODE_MODE_G40,
-  GCODE_MODE_G49,
-  GCODE_MODE_G98,
-  0,
-  GCODE_MODE_G61,
-  0,
-  0,
-  GCODE_MODE_M05,
-  GCODE_MODE_M09,
-  GCODE_MODE_M48,
-  0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-  0, 0, 0,
+const TGCodeState defaultGCodeState = {
+  GCODE_FEED_PERMINUTE,
+  {
+    GCODE_PLANE_XY,
+    GCODE_UNITS_METRIC,
+    {
+      GCODE_COMP_RAD_OFF,
+      0.0
+    },
+    {
+      GCODE_COMP_LEN_OFF,
+      0.0
+    },
+    GCODE_WCS_1,
+    {
+      GCODE_MIRROR_OFF_S,
+      0.0,
+      0.0,
+      0.0
+    },
+    {
+      GCODE_ROTATION_OFF,
+      0.0,
+      0.0,
+      0
+    },
+    GCODE_ABSOLUTE,
+    GCODE_CARTESIAN,
+    {
+      GCODE_SCALING_OFF,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+    },
+    {
+      0.0,
+      0.0,
+      0.0
+    },
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  },
+  GCODE_RETRACT_LAST,
+  OFF,
+  OFF,
+  GCODE_EXACTSTOPCHECK_OFF,
+  false,
+  GCODE_CYCLE_CANCEL,
+  false,
+  false,
+  false,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
   0,
   0,
   0
-};*/
+};
 
 static TGCodeState currentGCodeState;
 
 bool init_gcode_state(void *data) {
-  /*currentGCodeState = defaultGCodeState;*/
+  currentGCodeState = defaultGCodeState;
 
   GCODE_DEBUG("G-Code state machine up, defaults loaded, %d programs available", GCODE_PROGRAM_CAPACITY);
 
@@ -296,25 +339,43 @@ bool update_gcode_state(char *line) {
   /* Read, update and commit parameters comes here */
   if(have_gcode_word('M', 1, 47)) rewind_input();
   if(have_gcode_word('M', 1, 98)) {
-    //TODO: support nested repeats as well
-    currentGCodeState.repeat = (have_gcode_word('L', 0) ? get_gcode_word_integer('L'): 1);
-    stacks_push_program(tell_input(), currentGCodeState.macroCall);
+    TProgramPointer programState;
+
+    // Set current line
+    programState.programCounter = tell_input();
+    // Set current status
+    programState.macroCall = currentGCodeState.macroCall;
+    // We don't care about this repeatCount, the next one is checked
+    stacks_push_program(&programState);
     //TODO: implement O word indexing in input and replace P with offset_of(P)
     seek_input_line(get_gcode_word_integer('P'));
+    // Reset our status
     currentGCodeState.macroCall = false;
-    stacks_push_program(tell_input(), currentGCodeState.macroCall);
+    // Set the repeat count, note that we're still working on the original line
+    // even if the input has been fseek()-ed elsewhere.
+    programState.repeatCount = (have_gcode_word('L', 0) ? get_gcode_word_integer('L'): 1);
+    // Set current line for a possible repeat
+    programState.programCounter = tell_input();
+    stacks_push_program(&programState);
   }
   if(have_gcode_word('M', 1, 99)) {
-    if(currentGCodeState.repeat) {
-      currentGCodeState.repeat--;
-      seek_input_line(stacks_peek_program());
+    TProgramPointer programState;
+
+    // Either way, we have to look
+    stacks_pop_program(&programState);
+    if(--programState.repeatCount) {
+      // We still have iterations to go, push updated repeatCount back ...
+      stacks_push_program(&programState);
+      // ... and jump
+      seek_input_line(programState.programCounter);
     } else {
-      stacks_pop_program(&currentGCodeState.macroCall);
-      seek_input_line(stacks_pop_program(&currentGCodeState.macroCall));
-      if(currentGCodeState.macroCall) {
-        currentGCodeState.macroCall = false;
-        stacks_pop_parameters();
-      }
+      // Done looping, pop previous status
+      stacks_pop_program(&programState);
+      // Return to caller
+      seek_input_line(programState.programCounter);
+      // ... and since we restore #1-33 here, we don't care about restoring
+      // currenGCodeState.macroCall as well
+      if(programState.macroCall) stacks_pop_parameters();
     }
   }
 
