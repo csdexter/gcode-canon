@@ -24,12 +24,16 @@ static uint8_t programCount;
 
 
 bool init_input(void *data) {
+  char dummy[0xFF];
+
   input = (FILE *)data;
   memset(&programs, 0x00, sizeof(programs));
   programCount = 0;
-
-  rewind_input();
+  GCODE_DEBUG("Input stream up, %d program table entries available", GCODE_PROGRAM_CAPACITY);
   setlocale(LC_ALL, "C");
+  display_machine_message("STA: Scanning input for programs (O words)");
+  while(fetch_line_input(dummy));
+  rewind_input();
 
   return true;
 }
@@ -43,7 +47,7 @@ bool rewind_input(void) {
   return true;
 }
 
-bool seek_input_line(uint16_t lineNumber) {
+bool seek_input(uint16_t lineNumber) {
   int i;
   char *dummy, *result;
 
@@ -69,7 +73,8 @@ char fetch_char_input(void) {
 }
 
 bool fetch_line_input(char *line) {
-  int i = 0, j, c = '\0';
+  int c = '\0';
+  uint8_t i = 0, j;
   bool ignore = false;
   char commsg[0xFF - 5]; /* max line length - 2 parentheses and "MSG" */
 
@@ -113,21 +118,26 @@ bool fetch_line_input(char *line) {
     }
 
     if(c == 'N' || c == 'O') {
+      int d;
+
       if(i) display_machine_message("PER: N or O word not at start of block!");
 
       j = 0;
-      c = fetch_char_input(); /* read the number, which should be a literal integer */
-      while(isdigit(c)) {
-        commsg[j++] = c;
-        c = fetch_char_input();
+      d = fetch_char_input(); /* read the number, which should be a literal integer */
+      while(isdigit(d)) {
+        commsg[j++] = d;
+        d = fetch_char_input();
       }
       commsg[j] = '\0';
 
-      if(c == 'O') { /* We ignore N and store a bookmark for O for now */
-        programs[programCount].program = (uint16_t)atol(commsg); /* Better mess with precision than signedness */
-        programs[programCount].offset = tell_input() + 1; /* The line immediately after the O word */
-        programCount++;
-      }
+      if(c == 'O') /* We ignore N and store a bookmark for O for now */
+        if(programCount < GCODE_PROGRAM_CAPACITY) {
+          programs[programCount].program = (uint16_t)atol(commsg); /* Better mess with precision than signedness */
+          programs[programCount].offset = tell_input() + 1; /* The line immediately after the O word */
+          programCount++;
+        } else display_machine_message("PER: Program table overflow!");
+
+      c = d; /* First non-digit character has to go back in processing */
     }
 
     line[i++] = c; /* Otherwise add to the line buffer */
@@ -135,6 +145,15 @@ bool fetch_line_input(char *line) {
   line[i] = '\0';
 
   return c == EOF ? false : true;
+}
+
+uint16_t get_program_input(uint16_t program) {
+  uint8_t i;
+  //TODO: if we ever consider storing a big number of these, switch to qsort/bsearch
+  for(i = 0; i < GCODE_PROGRAM_CAPACITY; i++)
+    if(programs[i].program == program) return programs[i].offset;
+
+  return 0;
 }
 
 bool done_input(void) {

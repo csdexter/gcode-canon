@@ -18,15 +18,16 @@
 #include "gcode-machine.h"
 #include "gcode-state.h"
 
-int main(void) {
-  FILE *parFile = fopen(GCODE_PARAMETER_STORE, "rm");
+int main(int argc, char *argv[]) {
+  FILE *parFile = fopen(GCODE_PARAMETER_STORE, "r");
+  FILE *inputFile = fopen(argv[1], "r");
   char line[0xFF];
 
   init_machine(NULL);
   init_parameters(parFile);
   init_stacks(NULL);
   init_tools(NULL);
-  init_input(stdin);
+  init_input(inputFile);
   init_gcode_state(NULL);
 
   while(fetch_line_input(line)) update_gcode_state(line);

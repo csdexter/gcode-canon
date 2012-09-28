@@ -11,9 +11,6 @@
 * since this is a mill, we assume we'll never see the E word. If this changes,
   we'll need to change strtod() not to think "<some digits>E<some digits>" is
   scientific notation.
-* we now use the seekable stream model but do not parse the whole file at the
-  beginning to extract O words which, in effect, means that we can only call
-  things we have already seen (and executed). Fix this shit!
 * integers must be integers, no G00.0000000 garbage.
 * surprisingly, gcode-machine should poll overrides and dynamically apply any
   changes.

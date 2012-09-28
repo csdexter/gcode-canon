@@ -96,7 +96,7 @@ static TGCodeState currentGCodeState;
 bool init_gcode_state(void *data) {
   currentGCodeState = defaultGCodeState;
 
-  GCODE_DEBUG("G-Code state machine up, defaults loaded, %d programs available", GCODE_PROGRAM_CAPACITY);
+  GCODE_DEBUG("G-Code state machine up, defaults loaded");
 
   return true;
 }
@@ -130,7 +130,8 @@ bool update_gcode_state(char *line) {
   parseCache.at = NULL;
 
   if((arg = have_gcode_word('G', 2, GCODE_FEED_INVTIME, GCODE_FEED_PERMINUTE))) currentGCodeState.feedMode = arg;
-  if(have_gcode_word('F', 0)) currentGCodeState.F = override_feed_machine(get_gcode_word_integer('F'));
+  // We have integer precision for F, but people would write it as a real.
+  if(have_gcode_word('F', 0)) currentGCodeState.F = override_feed_machine(get_gcode_word_real('F'));
   if(have_gcode_word('S', 0)) set_spindle_speed_machine(override_speed_machine(get_gcode_word_integer('S')));
   if(have_gcode_word('T', 0)) {
     currentGCodeState.T = get_gcode_word_integer('T');
@@ -347,8 +348,7 @@ bool update_gcode_state(char *line) {
     programState.macroCall = currentGCodeState.macroCall;
     // We don't care about this repeatCount, the next one is checked
     stacks_push_program(&programState);
-    //TODO: implement O word indexing in input and replace P with offset_of(P)
-    seek_input_line(get_gcode_word_integer('P'));
+    seek_input(get_program_input(get_gcode_word_integer('P')));
     // Reset our status
     currentGCodeState.macroCall = false;
     // Set the repeat count, note that we're still working on the original line
@@ -367,12 +367,12 @@ bool update_gcode_state(char *line) {
       // We still have iterations to go, push updated repeatCount back ...
       stacks_push_program(&programState);
       // ... and jump
-      seek_input_line(programState.programCounter);
+      seek_input(programState.programCounter);
     } else {
       // Done looping, pop previous status
       stacks_pop_program(&programState);
       // Return to caller
-      seek_input_line(programState.programCounter);
+      seek_input(programState.programCounter);
       // ... and since we restore #1-33 here, we don't care about restoring
       // currenGCodeState.macroCall as well
       if(programState.macroCall) stacks_pop_parameters();
@@ -483,7 +483,7 @@ uint8_t have_gcode_word(char word, uint8_t argc, ...) {
         if((uint8_t)read_gcode_integer(&last[1]) == result) {
           if(!result) result = 100; /* Special case: tell 0 apart from false */
           break;
-        }
+        } else result = 0;
         last = strchr(&last[1], word);
       }
     }

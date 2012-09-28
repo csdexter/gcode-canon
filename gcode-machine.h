@@ -14,7 +14,7 @@
 
 #define GCODE_MACHINE_LOWEST_RPM 60UL /* 1 revolution per second, fast enough to catch attention and slow enough to be safe */
 #define GCODE_MACHINE_NO_TOOL 0
-#define GCODE_MACHINE_FEED_TRAVERSE 0xFFFFU /* 1092.25mm/sec, none of the hardware we're targeting is that fast so safe to use as flag */
+#define GCODE_MACHINE_FEED_TRAVERSE 0xEA60U /* 1000mm/sec, none of the hardware we're targeting is that fast so safe to use as flag */
 
 typedef union {
   uint8_t flags;
