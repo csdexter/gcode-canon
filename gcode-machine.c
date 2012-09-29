@@ -29,6 +29,8 @@ bool init_machine(void *data) {
 }
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, uint16_t F) {
+  if(X == machineX && Y == machineY && Z == machineZ) return false;
+
   machineX = X;
   machineY = Y;
   machineZ = Z;

@@ -151,21 +151,21 @@ bool update_gcode_state(char *line) {
   if(have_gcode_word('G', 1, 4)) GCODE_DEBUG("Would dwell for %4.2f seconds.", get_gcode_word_real('P'));
   if((arg = have_gcode_word('G', 3, GCODE_PLANE_XY, GCODE_PLANE_ZX, GCODE_PLANE_YZ))) currentGCodeState.system.plane = arg;
   if((arg = have_gcode_word('G', 2, GCODE_UNITS_INCH, GCODE_UNITS_METRIC))) currentGCodeState.system.units = arg;
-  if((arg = have_gcode_word('G', GCODE_COMP_RAD_OFF, GCODE_COMP_RAD_L, GCODE_COMP_RAD_R))) {
+  if((arg = have_gcode_word('G', 3, GCODE_COMP_RAD_OFF, GCODE_COMP_RAD_L, GCODE_COMP_RAD_R))) {
     currentGCodeState.system.radComp.mode = arg;
     if(arg != GCODE_COMP_RAD_OFF) {
       if(have_gcode_word('D', 0)) currentGCodeState.system.radComp.offset = radiusof_tool(get_gcode_word_integer('D'));
       else currentGCodeState.system.radComp.offset = radiusof_tool(currentGCodeState.T);
     }
   }
-  if((arg = have_gcode_word('G', GCODE_COMP_LEN_OFF, GCODE_COMP_LEN_N, GCODE_COMP_LEN_P))) {
+  if((arg = have_gcode_word('G', 3, GCODE_COMP_LEN_OFF, GCODE_COMP_LEN_N, GCODE_COMP_LEN_P))) {
     currentGCodeState.system.lenComp.mode = arg;
     if(arg != GCODE_COMP_LEN_OFF) {
       if(have_gcode_word('H', 0)) currentGCodeState.system.lenComp.offset = lengthof_tool(get_gcode_word_integer('H'));
       else currentGCodeState.system.lenComp.offset = lengthof_tool(currentGCodeState.T);
     }
   }
-  if((arg = have_gcode_word('G', GCODE_WCS_1, GCODE_WCS_2, GCODE_WCS_3, GCODE_WCS_4, GCODE_WCS_5, GCODE_WCS_6))) currentGCodeState.system.current = arg;
+  if((arg = have_gcode_word('G', 6, GCODE_WCS_1, GCODE_WCS_2, GCODE_WCS_3, GCODE_WCS_4, GCODE_WCS_5, GCODE_WCS_6))) currentGCodeState.system.current = arg;
   if((arg = have_gcode_word('M', 3, GCODE_MIRROR_X, GCODE_MIRROR_Y, GCODE_MIRROR_OFF_M))) enable_mirror_machine(arg);
   if((arg = have_gcode_word('G', 2, GCODE_MIRROR_ON, GCODE_MIRROR_OFF_S))) {
     currentGCodeState.system.mirror.mode = arg;
@@ -337,7 +337,7 @@ bool update_gcode_state(char *line) {
   }
   if((arg = have_gcode_word('M', 10, GCODE_STOP_COMPULSORY, GCODE_STOP_OPTIONAL, GCODE_STOP_END, GCODE_SERVO_ON, GCODE_SERVO_OFF, GCODE_STOP_RESET, GCODE_STOP_E, GCODE_APC_1, GCODE_APC_2, GCODE_APC_SWAP)))
     /* Machine stop comes here */;
-  /* Read, update and commit parameters comes here */
+  process_gcode_parameters();
   if(have_gcode_word('M', 1, 47)) rewind_input();
   if(have_gcode_word('M', 1, 98)) {
     TProgramPointer programState;
@@ -379,65 +379,6 @@ bool update_gcode_state(char *line) {
     }
   }
 
-/**
- * - echo (MSG, [already done first by input]
- * - if(seen_G && arg = have_G(2, 93, 94)) state.feedrateMode = arg
- * - if(seen_F) state.feedrate = get_override_feed_machine(get_F()) [returns 100% if disabled]
- * - if(seen_S) state.spindleSpeed = get_override_speed_machine(get_S()), set_spindle_speed_machine(state.spindleSpeed)
- * - if(seen_T) state.tool = get_T(), preselect_tool_machine(state.tool) [moves carousel]
- * - if(seen_M && have_M(1, 6)) change_tool_machine(state.tool) [actually changes tool]
- * - if(seen_M && have_M(1, 52)) change_tool_machine(TOOL_EMPTY) [unload spindle]
- * - if(seen_M && arg = have_M(2, 26, 27)) select_probe_machine(arg)
- * - if(seen_M && arg = have_M(2, 41, 42)) set_probemode_machine(arg)
- * - if(seen_M && arg = have_M(3, 3, 4, 5)) start_spindle_machine(arg)
- * - if(seen_M && arg = have_M(5, 7, 8, 9, 68, 69)) start_coolant_machine(arg)
- * - if(seen_M && arg = have_M(2, 13, 14)) start_spindle_and_coolant_machine(arg))
- * - if(seen_M && arg = have_M(2, 48, 49)) enable_override_machine(arg)
- * - if(seen_G && have_G(1, 4)) dwell_machine(get_P())
- * - if(seen_G && arg = have_G(3, 17, 18, 19)) state.systemPlane = arg
- * - if(seen_G && arg = have_G(2, 20, 21)) state.systemUnits = arg
- * - if(seen_G && arg = have_G(3, 40, 41, 42)) state.systemRadComp = arg
- * - if(seen_G && arg = have_G(3, 43, 44, 49)) state.systemLenComp = arg
- * - if(seen_G && arg = have_G(6, 53, 54, 55, 56, 57, 58, 59)) state.systemCurrent = arg
- * - if(seen_M && arg = have_M(3, 21, 22, 23)) enable_mirror_machine(arg)
- * - if(seen_G && arg = have_G(2, 22, 23)) state.systemMirror = (arg, get_X(), get_Y(), get_Z())
- * - if(seen_G && arg = have_G(2, 68, 69)) state.systemRotation = (arg, get_X(), get_Y(), get_R())
- * - if(seen_G && arg = have_G(2, 61, 64)) set_pathcontrol_machine(arg)
- * - if(seen_G && have_G(1, 9)) nmPC = true, oldPC = get_pathcontrol_machine(), set_pathcontrol_machine(EXACT)
- * - if(seen_G && arg = have_G(2, 90, 91)) state.systemAbsolute = arg
- * - if(seen_G && arg = have_G(2, 15, 16)) state.systemCartesian = arg
- * - if(seen_G && arg = have_G(2, 50, 51)) state.systemScaling = (arg, get_I(), get_J(), get_K(), get_P())
- * - if(seen_G && arg = have_G(2, 98, 99)) state.retractMode = arg
- * - if(seen_G)
- *     if(arg = have_G(4, 28, 29, 30, 80))
- *       state.motionMode = OFF
- *       if(arg != 80) move_machine_home(arg, get_X(), get_Y(), get_Z())
- *     if(arg = have_G(2, 10, 11)) oldMode = state.motionMode, state.motionMode = store_parameter_mode(arg) [which means STORE or oldMode]
- *     if(have_G(1, 92)) state.systemOffset = (get_X(), get_Y(), get_Z())
- * - if(seen_G)
- *     if(arg = have_G(6, 0, 1, 2, 3, 12, 13)) state.motionMode = arg
- *     if(arg = have_G(13, 31, 38, 73, 74, 81, 82, 83, 84, 85, 86, 87, 88, 89)) state.motionMode = CYCLE, state.cycle = arg
- * - if(seen_M && arg = have_M(3, 19, 20, 25)) move_machine_aux(arg)
- * - switch(state.motionMode)
- *     RAPID, LINEAR: move_machine_line(do_WCS_math(get_X(), get_Y(), get_Z(), state.system*), state.feedrate, state.feedrateMode)
- *     ARC, CIRCLE: move_machine_arc(do_WCS_math(get_X(), get_Y(), get_Z(), state.system*), get_I(), get_J(), get_K(), get_R(), get_P(), state.feedrate, state.feedrateMode)
- *     STORE: do_data_input(get_L(), get_P(), ...), commit_data()
- *     CYCLE: move_machine_cycle(state.cycle, do_WCS_math(get_X(), get_Y(), get_Z(), state.system*), state.retractMode, get_L(), get_P(), get_Q(), get_R(), state.feedrate, state.feedrateMode)
- *     OFF: <NOP>
- * - if(nmPC && state.motionMode != OFF) set_pathcontrol_machine(oldPC), nmPC = false
- * - if(seen_G && have_G(1, 65)) cmsc = true, push_parameters(), update_parameters(map_words_to_parameters(get_ALL()))
- * - if(seen_M && arg = have_M(8, 0, 1, 2, 17, 18, 30, 36, 60)) stop_machine(arg) [which reads Optional Stop and/or terminates us accordingly]
- * - update_parameters(parse_parameters(line)) [takes care of assignments #<idx>=<value OR #<param>>]
- * - commit_parameters() [always last on the line, according to the standard]
- * - if(seen_M) [since these change the line, they're conceptually after the end]
- *     if(have_M(1, 47)) rewind_input()
- *     if(have_M(1, 98)) push(tell_input()), seek_line_input(programs[get_P()]), push(tell_input()), repeat = get_L()
- *     if(have_M(1, 99))
- *       if(repeat) repeat--, seek_line_input(peek())
- *       if(!repeat) pop(), seek_line_input(pop())
- *         if(cmsc) cmsc = false, pop_parameters() [pop_parameters() calls commit internally]
- */
-
   return true;
 }
 
@@ -462,8 +403,9 @@ static bool _refresh_gcode_parse_cache(char word) {
 
 uint8_t have_gcode_word(char word, uint8_t argc, ...) {
   va_list argv;
-  uint8_t result = false;
-  char *last = NULL;
+  uint8_t result;
+  bool found = false;
+  char *last;
 
   if(!_refresh_gcode_parse_cache(word)) return false; /* No such word */
   else if(!argc) return true; /* We were only testing presence */
@@ -476,22 +418,22 @@ uint8_t have_gcode_word(char word, uint8_t argc, ...) {
   } else { /* Generic case: loop through targets */
     va_start(argv, argc);
 
-    while(!result && argc--) {
+    while(!found && argc--) {
       last = parseCache.at;
+      result = (uint8_t)va_arg(argv, int);
       while(last){
-        result = (uint8_t)va_arg(argv, int);
         if((uint8_t)read_gcode_integer(&last[1]) == result) {
           if(!result) result = 100; /* Special case: tell 0 apart from false */
+          found = true;
           break;
-        } else result = 0;
+        }
         last = strchr(&last[1], word);
       }
     }
 
     va_end(argv);
+    return (found ? result : false);
   }
-
-  return result;
 }
 
 double get_gcode_word_real(char word) {
@@ -502,4 +444,50 @@ double get_gcode_word_real(char word) {
 uint32_t get_gcode_word_integer(char word) {
   if(!_refresh_gcode_parse_cache(word)) return UINT32_MAX;
   else return read_gcode_integer(&parseCache.at[1]);
+}
+
+/* Used to jump over parameters and their arguments after being processed.
+ * Handles the corner case of having to jump over things like "#-10.23" */
+static char *_skip_digits(char *string) {
+  switch(*string) {
+    case '+':
+    case '-':
+      string++;
+      break;
+    case '#':
+      while(*(string++) && *string == '#');
+      break;
+  }
+  while(*(string++) && (isdigit(*string) || *string == '.'));
+
+  return string;
+}
+
+bool process_gcode_parameters(void) {
+  char *cchr;
+  uint16_t param;
+  double value = NAN;
+
+  // Is there any work for us to do?
+  if(have_gcode_word('=', 0) && have_gcode_word('#', 0)) {
+    // Potentially ... (we could have something like "G01 X#12 Y[3=2]")
+    // We cannot make use of read_gcode_* because we could have multiple
+    // occurrences of "#"
+    // The last have_gcode_word() call left parseCache.at pointing at the
+    // first parameter reference, that's where we begin
+    cchr = parseCache.at;
+    while(*cchr) {
+      param = read_gcode_integer(&cchr[1]);
+      cchr = _skip_digits(&cchr[1]);
+      if(*cchr == '=') { // Is this an assignment?
+        value = read_gcode_real(&cchr[1]);
+        cchr = _skip_digits(&cchr[1]);
+        update_parameter(param, value);
+      } else cchr = strchr(cchr, '#'); // No, move on to the next parameter
+    }
+    if(!isnan(value)) {
+      commit_parameters(); // We set at least one
+      return true;
+    } else return false;
+  } else return false;
 }

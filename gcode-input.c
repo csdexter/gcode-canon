@@ -112,8 +112,6 @@ bool fetch_line_input(char *line) {
       commsg[j] = '\0';
       if(!strncmp(commsg, "MSG,", strlen("MSG,"))) display_machine_message(&commsg[3]);
 
-      c = toupper(fetch_char_input()); /* go past the closing parenthesis */
-
       continue;
     }
 
@@ -129,6 +127,7 @@ bool fetch_line_input(char *line) {
         d = fetch_char_input();
       }
       commsg[j] = '\0';
+      ungetc(d, input); /* First non-digit character has to go back */
 
       if(c == 'O') /* We ignore N and store a bookmark for O for now */
         if(programCount < GCODE_PROGRAM_CAPACITY) {
@@ -137,7 +136,7 @@ bool fetch_line_input(char *line) {
           programCount++;
         } else display_machine_message("PER: Program table overflow!");
 
-      c = d; /* First non-digit character has to go back in processing */
+      continue;
     }
 
     line[i++] = c; /* Otherwise add to the line buffer */

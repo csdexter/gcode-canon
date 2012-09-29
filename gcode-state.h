@@ -277,6 +277,9 @@ double get_gcode_word_real(char word);
 /* Return the argument of the given word as an integer or ULONG_MAX if no such
  * word was on the line */
 uint32_t get_gcode_word_integer(char word);
+/* Scan line for parameter assignments (#<number>=<expression>) and update
+ * parameter store accordingly. */
+bool process_gcode_parameters(void);
 
 
 #endif /* GCODE_STATE_H_ */
