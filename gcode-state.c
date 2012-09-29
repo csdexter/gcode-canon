@@ -220,6 +220,7 @@ bool update_gcode_state(char *line) {
     } else currentGCodeState.motionMode = currentGCodeState.oldMotionMode;
   }
   if(have_gcode_word('G', 1, 92)) {
+    //TODO: implement proper WCS_math for these too (same thing, only store in system->offset.X instead of system->X
     currentGCodeState.system.offset.X = get_gcode_word_real('X');
     currentGCodeState.system.offset.Y = get_gcode_word_real('Y');
     currentGCodeState.system.offset.Z = get_gcode_word_real('Z');
