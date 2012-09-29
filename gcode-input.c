@@ -129,12 +129,13 @@ bool fetch_line_input(char *line) {
       commsg[j] = '\0';
       ungetc(d, input); /* First non-digit character has to go back */
 
-      if(c == 'O') /* We ignore N and store a bookmark for O for now */
+      if(c == 'O') {/* We ignore N and store a bookmark for O for now */
         if(programCount < GCODE_PROGRAM_CAPACITY) {
           programs[programCount].program = (uint16_t)atol(commsg); /* Better mess with precision than signedness */
           programs[programCount].offset = tell_input() + 1; /* The line immediately after the O word */
           programCount++;
         } else display_machine_message("PER: Program table overflow!");
+      }
 
       continue;
     }

@@ -55,6 +55,8 @@ bool orient_spindle_machine(uint16_t orientation);
 void display_machine_message(char *message);
 /* Returns true if the "Skip Deleted Blocks" switch is on */
 bool block_delete_machine(void);
+/* Returns true if the "Optional Stop" switch is on */
+bool optional_stop_machine(void);
 /* Returns feed reduced by the amount set on the Feed Rate Override control or feed if same is disabled */
 uint16_t override_feed_machine(uint16_t feed);
 /* Returns speed reduced by the amount set on the Spindle Speed Override control or speed if same is disabled */
@@ -76,6 +78,13 @@ bool select_probemode_machine(TGCodeProbeMode mode);
 bool enable_mirror_machine(TGCodeMirrorMachine mode);
 /* Selects path control mode (exact stop check) */
 bool select_pathmode_machine(TGCodePathControl mode);
+/* Performs machine stop (which means a pause of some sort) */
+bool do_stop_machine(TGCodeStopMode mode);
+/* Returns true if the machine is (or should still be) running, false if we
+ * should abort */
+bool machine_running(void);
+/* Enables or disables power to the machine movement */
+bool enable_power_machine(TGCodeStopMode mode);
 bool done_machine(void);
 
 #endif /* GCODE_MACHINE_H_ */

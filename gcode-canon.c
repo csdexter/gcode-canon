@@ -17,6 +17,7 @@
 #include "gcode-input.h"
 #include "gcode-machine.h"
 #include "gcode-state.h"
+#include "gcode-stacks.h"
 
 int main(int argc, char *argv[]) {
   FILE *parFile = fopen(GCODE_PARAMETER_STORE, "r");
@@ -30,7 +31,8 @@ int main(int argc, char *argv[]) {
   init_input(inputFile);
   init_gcode_state(NULL);
 
-  while(fetch_line_input(line)) update_gcode_state(line);
+  while(machine_running() && gcode_running() && fetch_line_input(line))
+    update_gcode_state(line);
 
   done_input();
   done_tools();

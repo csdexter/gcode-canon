@@ -280,6 +280,9 @@ uint32_t get_gcode_word_integer(char word);
 /* Scan line for parameter assignments (#<number>=<expression>) and update
  * parameter store accordingly. */
 bool process_gcode_parameters(void);
+/* Returns true if we are still (or should be) processing the current part
+ * program, false if program flow ended and we should exit or reset */
+bool gcode_running(void);
 
 
 #endif /* GCODE_STATE_H_ */

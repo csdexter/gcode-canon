@@ -5,6 +5,7 @@
  *      Author: csdexter
  */
 
+#include <ctype.h>
 #include <limits.h>
 #include <math.h>
 #include <stdarg.h>
@@ -23,8 +24,7 @@
 #include "gcode-stacks.h"
 
 static TGCodeWordCache parseCache;
-
-const TGCodeState defaultGCodeState = {
+static TGCodeState currentGCodeState = {
   GCODE_FEED_PERMINUTE,
   {
     GCODE_PLANE_XY,
@@ -90,11 +90,10 @@ const TGCodeState defaultGCodeState = {
   0,
   0
 };
-
-static TGCodeState currentGCodeState;
+static bool stillRunning;
 
 bool init_gcode_state(void *data) {
-  currentGCodeState = defaultGCodeState;
+  stillRunning = true;
 
   GCODE_DEBUG("G-Code state machine up, defaults loaded");
 
@@ -165,6 +164,7 @@ bool update_gcode_state(char *line) {
       else currentGCodeState.system.lenComp.offset = lengthof_tool(currentGCodeState.T);
     }
   }
+  //TODO: implement G53 (non-modal machine coordinate system)
   if((arg = have_gcode_word('G', 6, GCODE_WCS_1, GCODE_WCS_2, GCODE_WCS_3, GCODE_WCS_4, GCODE_WCS_5, GCODE_WCS_6))) currentGCodeState.system.current = arg;
   if((arg = have_gcode_word('M', 3, GCODE_MIRROR_X, GCODE_MIRROR_Y, GCODE_MIRROR_OFF_M))) enable_mirror_machine(arg);
   if((arg = have_gcode_word('G', 2, GCODE_MIRROR_ON, GCODE_MIRROR_OFF_S))) {
@@ -336,7 +336,30 @@ bool update_gcode_state(char *line) {
     currentGCodeState.nonModalPathMode = false;
   }
   if((arg = have_gcode_word('M', 10, GCODE_STOP_COMPULSORY, GCODE_STOP_OPTIONAL, GCODE_STOP_END, GCODE_SERVO_ON, GCODE_SERVO_OFF, GCODE_STOP_RESET, GCODE_STOP_E, GCODE_APC_1, GCODE_APC_2, GCODE_APC_SWAP)))
-    /* Machine stop comes here */;
+    switch(arg) {
+      case GCODE_STOP_E:
+        enable_power_machine(GCODE_SERVO_OFF);
+      case GCODE_STOP_COMPULSORY:
+      case GCODE_STOP_OPTIONAL:
+        do_stop_machine(arg);
+        break;
+      case GCODE_STOP_RESET:
+        rewind_input();
+      case GCODE_STOP_END:
+        GCODE_DEBUG("Reached end of program flow, exiting ...")
+        stillRunning = false;
+        break;
+      case GCODE_SERVO_ON:
+      case GCODE_SERVO_OFF:
+        enable_power_machine(arg);
+        break;
+      case GCODE_APC_1:
+      case GCODE_APC_2:
+      case GCODE_APC_SWAP:
+        move_machine_aux(arg, 0);
+        do_stop_machine(GCODE_STOP_COMPULSORY);
+        break;
+    }
   process_gcode_parameters();
   if(have_gcode_word('M', 1, 47)) rewind_input();
   if(have_gcode_word('M', 1, 98)) {
@@ -490,4 +513,8 @@ bool process_gcode_parameters(void) {
       return true;
     } else return false;
   } else return false;
+}
+
+bool gcode_running(void) {
+  return stillRunning;
 }

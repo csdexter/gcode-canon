@@ -16,12 +16,15 @@
 static double machineX, machineY, machineZ;
 static uint32_t spindleSpeed;
 static TGCodeMachineState currentMachineState;
+static bool stillRunning, servoPower;
 
 bool init_machine(void *data) {
   machineX = machineY = machineZ = 0.0;
   currentMachineState.flags = 0x00;
-  spindleSpeed = GCODE_MACHINE_LOWEST_RPM;
-  currentMachineState.overridesEnabled = true;
+  set_spindle_speed_machine(GCODE_MACHINE_LOWEST_RPM);
+  enable_override_machine(GCODE_OVERRIDE_ON);
+  stillRunning = true;
+  enable_power_machine(GCODE_SERVO_ON);
 
   GCODE_DEBUG("Machine is up");
 
@@ -29,7 +32,7 @@ bool init_machine(void *data) {
 }
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, uint16_t F) {
-  if(X == machineX && Y == machineY && Z == machineZ) return false;
+  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ)) return false;
 
   machineX = X;
   machineY = Y;
@@ -40,15 +43,16 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
 }
 
 bool move_machine_arc(double X, double Y, double Z, double I, double J, double K, double R, bool ccw, TGCodePlaneMode plane, TGCodeFeedMode feedMode, uint16_t F) {
+  if(!servoPower) return false;
   //TODO: implement planes, for now assumes always XY
   if(!isnan(R)) {
     double d = hypot(machineX - X, machineY - Y);
     I = (X - machineX) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
     J = (Y - machineY) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
   } else R = hypot(I, J);
-  GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
-      I, J, K, R, (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, F);
-  if(!isnan(Z)) {
+  GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm) of radius %4.2fmm %s ending at V(%4.2fmm, %4.2fmm) at %4dmm/min",
+      machineX + I, machineY + J, R, (ccw ? "counter-clockwise" : "clockwise"), X, Y, F);
+  if(Z != machineZ) {
     GCODE_DEBUG("Has helical component to Z=%4.2fmm", Z);
     machineZ = Z;
   }
@@ -78,12 +82,14 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
 }
 
 bool move_machine_cycle(TGCodeCycleMode mode, double X, double Y, double Z, TGCodeRetractMode retract, uint16_t L, double P, double Q, double R, TGCodeFeedMode feedMode, uint16_t F) {
+  if(!servoPower) return false;
   GCODE_DEBUG("Canned cycle %d", mode);
 
   return true;
 }
 
 bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
+  if(!servoPower) return false;
   move_machine_line(X, Y, Z, GCODE_FEED_PERMINUTE, GCODE_MOVE_FEED);
 
   switch(mode) {
@@ -104,6 +110,8 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
 }
 
 bool move_machine_aux(TGCodeAuxiliaryMachine mode, uint32_t P) {
+  if(!servoPower) return false;
+
   switch(mode) {
     case GCODE_SPINDLE_ORIENTATION:
       if(P == UINT32_MAX) orient_spindle_machine(0);
@@ -124,6 +132,8 @@ bool move_machine_aux(TGCodeAuxiliaryMachine mode, uint32_t P) {
 }
 
 bool start_spindle_machine(TGCodeSpindleMode direction) {
+  if(!servoPower) return false;
+
   if((currentMachineState.spindleCW && direction == GCODE_SPINDLE_CW) ||
     (currentMachineState.spindleCCW && direction == GCODE_SPINDLE_CCW)) return true;
   if(!(currentMachineState.spindleCW || currentMachineState.spindleCCW)) {
@@ -149,6 +159,8 @@ bool set_spindle_speed_machine(uint32_t speed) {
 }
 
 bool orient_spindle_machine(uint16_t orientation) {
+  if(!servoPower) return false;
+
   if(currentMachineState.spindleCW || currentMachineState.spindleCCW) GCODE_DEBUG("Spindle currently running, cannot orient!")
   else GCODE_DEBUG("Oriented spindle at %3ddeg", orientation);
 
@@ -163,6 +175,10 @@ bool block_delete_machine(void) {
   return true; /* Always on, for now */
 }
 
+bool optional_stop_machine(void) {
+  return false; /* Always off for now */
+}
+
 uint16_t override_feed_machine(uint16_t feed) {
   if(currentMachineState.overridesEnabled) return feed * 0.90; /* Simulate 90% setting */
   else return feed;
@@ -174,12 +190,16 @@ uint32_t override_speed_machine(uint32_t speed) {
 }
 
 bool preselect_tool_machine(uint8_t tool) {
+  if(!servoPower) return false;
+
   GCODE_DEBUG("Moving tool carousel to tool %d", tool);
 
   return tool;
 }
 
 bool change_tool_machine(uint8_t tool) {
+  if(!servoPower) return false;
+
   if(tool) GCODE_DEBUG("Performing ATC to tool %d", tool)
   else GCODE_DEBUG("Unloading spindle");
 
@@ -187,6 +207,8 @@ bool change_tool_machine(uint8_t tool) {
 }
 
 bool start_coolant_machine(TGCodeCoolantMode mode) {
+  if(!servoPower) return false;
+
   switch(mode) {
     case GCODE_COOL_MIST:
       GCODE_DEBUG("Activating mist coolant");
@@ -249,6 +271,51 @@ bool select_pathmode_machine(TGCodePathControl mode) {
   currentMachineState.exactStopCheck = (mode == GCODE_EXACTSTOPCHECK_ON);
 
   GCODE_DEBUG("Exact stop check (path control) %s", currentMachineState.exactStopCheck ? "on" : "off");
+
+  return true;
+}
+
+bool do_stop_machine(TGCodeStopMode mode) {
+  switch(mode) {
+    case GCODE_STOP_E:
+      display_machine_message("STA: Machine in E-Stop");
+      break;
+    case GCODE_STOP_COMPULSORY:
+      display_machine_message("STA: Machine in compulsory stop");
+      break;
+    case GCODE_STOP_OPTIONAL:
+      if(optional_stop_machine())
+        display_machine_message("STA: Machine in optional stop");
+      else return false;
+      break;
+    default:
+      break;
+  }
+  GCODE_DEBUG("Machine stopped, send EOF to abort or newline to continue ...");
+  if(fgetc(stdin) == EOF) {
+    GCODE_DEBUG("User-requested abort, exiting ...")
+    stillRunning = false;
+  }
+  return true;
+}
+
+bool machine_running(void) {
+  return stillRunning;
+}
+
+bool enable_power_machine(TGCodeStopMode mode) {
+  switch(mode) {
+    case GCODE_SERVO_ON:
+      servoPower = true;
+      display_machine_message("WAR: Machine servos activated!");
+      break;
+    case GCODE_SERVO_OFF:
+      servoPower = false;
+      display_machine_message("STA: Machine servos inactive");
+      break;
+    default:
+      break;
+  }
 
   return true;
 }
