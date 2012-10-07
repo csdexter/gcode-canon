@@ -8,9 +8,6 @@
 * machine display/conceptual precision is 10um
 * F has integer precision in mm/min
 * all display and save/restore of doubles is in %4.2f format
-* since this is a mill, we assume we'll never see the E word. If this changes,
-  we'll need to change strtod() not to think "<some digits>E<some digits>" is
-  scientific notation.
 * integers must be integers, no G00.0000000 garbage.
 * surprisingly, gcode-machine should poll overrides and dynamically apply any
   changes.

@@ -92,13 +92,6 @@ static TGCodeState currentGCodeState = {
 };
 static bool stillRunning;
 
-bool init_gcode_state(void *data) {
-  stillRunning = true;
-
-  GCODE_DEBUG("G-Code state machine up, defaults loaded");
-
-  return true;
-}
 
 static TGCodeMotionMode _map_move_to_motion(TGCodeMoveMode mode, bool *ccw) {
   switch(mode) {
@@ -119,6 +112,40 @@ static TGCodeMotionMode _map_move_to_motion(TGCodeMoveMode mode, bool *ccw) {
     default:
       return OFF;
   }
+}
+
+static bool _refresh_gcode_parse_cache(char word) {
+  if(parseCache.word != word) { /* Not in cache */
+    parseCache.word = word;
+    parseCache.at = strchr(parseCache.line, word); /* Position at first occurrence */
+  }
+
+  return parseCache.at;
+}
+
+/* Used to jump over parameters and their arguments after being processed.
+ * Handles the corner case of having to jump over things like "#-10.23" */
+static char *_skip_gcode_digits(char *string) {
+  switch(*string) {
+    case '+':
+    case '-':
+      string++;
+      break;
+    case '#':
+      while(*(string++) && *string == '#');
+      break;
+  }
+  while(*(string++) && (isdigit(*string) || *string == '.'));
+
+  return string;
+}
+
+bool init_gcode_state(void *data) {
+  stillRunning = true;
+
+  GCODE_DEBUG("G-Code state machine up, defaults loaded");
+
+  return true;
 }
 
 bool update_gcode_state(char *line) {
@@ -408,21 +435,38 @@ bool update_gcode_state(char *line) {
 
 uint32_t read_gcode_integer(char *line) {
   if(line[0] == '#') return (uint32_t)fetch_parameter(read_gcode_integer(&line[1]));
-  else return strtol(line, (char **)NULL, 10);
+  else {
+    char saveChar, *savePtr;
+    uint32_t result;
+
+    savePtr = _skip_gcode_digits(line);
+    if(*savePtr) {
+      saveChar = *savePtr;
+      *savePtr = '\0';
+    }
+    result = strtol(line, (char **)NULL, 10);
+    if(saveChar) *savePtr = saveChar;
+
+    return result;
+  }
 }
 
 double read_gcode_real(char *line) {
   if(line[0] == '#') return fetch_parameter(read_gcode_integer(&line[1]));
-  else return strtod(line, (char **)NULL);
-}
+  else {
+    char saveChar, *savePtr;
+    double result;
 
-static bool _refresh_gcode_parse_cache(char word) {
-  if(parseCache.word != word) { /* Not in cache */
-    parseCache.word = word;
-    parseCache.at = strchr(parseCache.line, word); /* Position at first occurrence */
+    savePtr = _skip_gcode_digits(line);
+    if(*savePtr) {
+      saveChar = *savePtr;
+      *savePtr = '\0';
+    }
+    result = strtod(line, (char **)NULL);
+    if(saveChar) *savePtr = saveChar;
+
+    return result;
   }
-
-  return parseCache.at;
 }
 
 uint8_t have_gcode_word(char word, uint8_t argc, ...) {
@@ -470,23 +514,6 @@ uint32_t get_gcode_word_integer(char word) {
   else return read_gcode_integer(&parseCache.at[1]);
 }
 
-/* Used to jump over parameters and their arguments after being processed.
- * Handles the corner case of having to jump over things like "#-10.23" */
-static char *_skip_digits(char *string) {
-  switch(*string) {
-    case '+':
-    case '-':
-      string++;
-      break;
-    case '#':
-      while(*(string++) && *string == '#');
-      break;
-  }
-  while(*(string++) && (isdigit(*string) || *string == '.'));
-
-  return string;
-}
-
 bool process_gcode_parameters(void) {
   char *cchr;
   uint16_t param;
@@ -502,10 +529,10 @@ bool process_gcode_parameters(void) {
     cchr = parseCache.at;
     while(*cchr) {
       param = read_gcode_integer(&cchr[1]);
-      cchr = _skip_digits(&cchr[1]);
+      cchr = _skip_gcode_digits(&cchr[1]);
       if(*cchr == '=') { // Is this an assignment?
         value = read_gcode_real(&cchr[1]);
-        cchr = _skip_digits(&cchr[1]);
+        cchr = _skip_gcode_digits(&cchr[1]);
         update_parameter(param, value);
       } else cchr = strchr(cchr, '#'); // No, move on to the next parameter
     }
