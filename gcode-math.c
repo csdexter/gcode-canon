@@ -31,6 +31,7 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
     }
   } else {
     //TODO: provide for "use the last value" when using polar coordinates
+    if(system->units == GCODE_UNITS_INCH) X *= 25.4;
     system->X += X * cos(Y * 0.0174532925);
     system->Y += X * sin(Y * 0.0174532925);
   }
