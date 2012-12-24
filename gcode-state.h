@@ -122,6 +122,7 @@ typedef enum {
 } TGCodeRetractMode;
 
 typedef enum {
+  GCODE_MCS = 53,
   GCODE_WCS_1 = 54,
   GCODE_WCS_2 = 55,
   GCODE_WCS_3 = 56,
@@ -197,7 +198,7 @@ typedef struct {
 
 typedef struct {
   TGCodeRotationSystem mode;
-  double X, Y;
+  double X, Y, Z;
   uint16_t R;
 } TGCodeRotationSpec;
 
@@ -228,6 +229,7 @@ typedef struct {
   TGCodeScalingSpec scaling;
   TGCodeOffsetSpec offset;
   double X, Y, Z, R;
+  double pR, pT;
 } TGCodeCoordinateInfo;
 
 typedef struct {

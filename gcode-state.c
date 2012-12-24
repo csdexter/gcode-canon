@@ -205,6 +205,7 @@ bool update_gcode_state(char *line) {
     currentGCodeState.system.rotation.mode = arg;
     currentGCodeState.system.rotation.X = get_gcode_word_real('X');
     currentGCodeState.system.rotation.Y = get_gcode_word_real('Y');
+    currentGCodeState.system.rotation.Z = get_gcode_word_real('Z');
     currentGCodeState.system.rotation.R = get_gcode_word_integer('R');
     currentGCodeState.axisWordsConsumed = true;
   }
@@ -217,7 +218,12 @@ bool update_gcode_state(char *line) {
     select_pathmode_machine(GCODE_EXACTSTOPCHECK_ON);
   }
   if((arg = have_gcode_word('G', 2, GCODE_ABSOLUTE, GCODE_RELATIVE))) currentGCodeState.system.absolute = arg;
-  if((arg = have_gcode_word('G', 2, GCODE_CARTESIAN, GCODE_POLAR))) currentGCodeState.system.cartesian = arg;
+  if((arg = have_gcode_word('G', 2, GCODE_CARTESIAN, GCODE_POLAR))) {
+    /* Mode has just changed *to* polar so we must make sure we start with sane values */
+    if(arg != currentGCodeState.system.cartesian && arg == GCODE_POLAR)
+      currentGCodeState.system.pR = currentGCodeState.system.pT = 0.00;
+    currentGCodeState.system.cartesian = arg;
+  }
   if((arg = have_gcode_word('G', 2, GCODE_SCALING_ON, GCODE_SCALING_OFF))) {
     currentGCodeState.system.scaling.mode = arg;
     currentGCodeState.system.scaling.X = get_gcode_word_real('X');
