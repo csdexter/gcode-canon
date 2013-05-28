@@ -10,6 +10,7 @@
 #include "gcode-parameters.h"
 
 #include <math.h>
+#include <stdbool.h>
 
 bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
   //TODO: also provide for G53 (a.k.a. WCS0, a.k.a. MCS)

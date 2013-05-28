@@ -442,7 +442,7 @@ bool update_gcode_state(char *line) {
 uint32_t read_gcode_integer(char *line) {
   if(line[0] == '#') return (uint32_t)fetch_parameter(read_gcode_integer(&line[1]));
   else {
-    char saveChar, *savePtr;
+    char saveChar = '\0', *savePtr;
     uint32_t result;
 
     savePtr = _skip_gcode_digits(line);
@@ -460,7 +460,7 @@ uint32_t read_gcode_integer(char *line) {
 double read_gcode_real(char *line) {
   if(line[0] == '#') return fetch_parameter(read_gcode_integer(&line[1]));
   else {
-    char saveChar, *savePtr;
+    char saveChar = '\0', *savePtr;
     double result;
 
     savePtr = _skip_gcode_digits(line);

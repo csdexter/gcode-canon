@@ -5,6 +5,8 @@
  *      Author: csdexter
  */
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -54,6 +56,7 @@ bool seek_input(uint16_t lineNumber) {
   if(lineNumber < currentLine) rewind_input();
 
   dummy = (char *)malloc(0xFF);
+  result = dummy; /* Prevent un-initialised usage */
 
   for(i = currentLine; i < lineNumber && result; i++)
     result = fgets(dummy, 0xFF, input);
@@ -149,7 +152,6 @@ bool fetch_line_input(char *line) {
 
 uint16_t get_program_input(uint16_t program) {
   uint8_t i;
-  //TODO: if we ever consider storing a big number of these, switch to qsort/bsearch
   for(i = 0; i < GCODE_PROGRAM_CAPACITY; i++)
     if(programs[i].program == program) return programs[i].offset;
 

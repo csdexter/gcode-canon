@@ -8,7 +8,10 @@
 #ifndef GCODE_TOOLS_H_
 #define GCODE_TOOLS_H_
 
+#include <stdbool.h>
+
 #include "gcode-commons.h"
+
 
 typedef enum {
   GCODE_TOOL_UNDEFINED = -10,

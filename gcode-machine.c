@@ -6,6 +6,7 @@
  */
 
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "gcode-commons.h"
@@ -37,46 +38,44 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
   machineX = X;
   machineY = Y;
   machineZ = Z;
-  GCODE_DEBUG("Linear move V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min", X, Y, Z, F);
+  GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min", X, Y, Z, F);
 
   return true;
 }
 
 bool move_machine_arc(double X, double Y, double Z, double I, double J, double K, double R, bool ccw, TGCodePlaneMode plane, TGCodeFeedMode feedMode, uint16_t F) {
-  if(!servoPower) return false;
-  //TODO: implement planes, for now assumes always XY
-  if(!isnan(R)) {
-    double d = hypot(machineX - X, machineY - Y);
-    I = (X - machineX) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
-    J = (Y - machineY) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
-  } else R = hypot(I, J);
-  GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm) of radius %4.2fmm %s ending at V(%4.2fmm, %4.2fmm) at %4dmm/min",
-      machineX + I, machineY + J, R, (ccw ? "counter-clockwise" : "clockwise"), X, Y, F);
-  if(Z != machineZ) {
-    GCODE_DEBUG("Has helical component to Z=%4.2fmm", Z);
-    machineZ = Z;
+  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ)) return false;
+  switch(plane) {
+    case GCODE_PLANE_XY:
+      if(!isnan(R)) {
+        double d = hypot(machineX - X, machineY - Y);
+        I = (X - machineX) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
+        J = (Y - machineY) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
+      } else R = hypot(I, J);
+      break;
+    case GCODE_PLANE_ZX:
+      if(!isnan(R)) {
+        double d = hypot(machineZ - Z, machineX - X);
+        K = (Z - machineZ) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
+        I = (X - machineX) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
+      } else R = hypot(K, I);
+      break;
+    case GCODE_PLANE_YZ:
+      if(!isnan(R)) {
+        double d = hypot(machineY - Y, machineZ - Z);
+        J = (Y - machineY) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
+        K = (Z - machineZ) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
+      } else R = hypot(I, J);
+      break;
   }
 
-  /*
-  if full circle { As = 0, Af = pi } { As = pi, Af = 0 }
-  else:
-
-  double As = atan2(J, I);
-  double Af = atan2(Y - (machineY + J), X - (machineX + I));
-
-  double time = fabs(Af - As) * R / F; // time in same units as F
-  double quanta = time / 100;
-  double t = 0.0;
-
-  I += machineX;
-  J += machineY;
-  while(t < time) {
-   machineX = I + R * cos(As + (ccw ? 1 : -1) * ((F / R) * t));
-   machineY = J + R * sin(As + (ccw ? 1 : -1) * ((F / R) * t));
-   t += quanta;
-   GCODE_DEBUG("%4.2fmm %4.2fmm", machineX, machineY);
-  }*/
-  (void) plane;
+  GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
+      machineX + I, machineY + J, machineZ + K, R,
+      (plane == GCODE_PLANE_XY ? "XY" : (plane == GCODE_PLANE_ZX ? "ZX" : "YZ")),
+      (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, F);
+  machineX = X;
+  machineY = Y;
+  machineZ = Z;
 
   return true;
 }
@@ -262,7 +261,7 @@ bool enable_mirror_machine(TGCodeMirrorMachine mode) {
     currentMachineState.mirrorY = false;
   }
 
-  GCODE_DEBUG("Machine mirroring %s%s%s", (mode == GCODE_MIRROR_OFF_M) ? "disabled" : "enabled for axes: ",
+  GCODE_DEBUG("Machine mirroring %s%s%s", (mode == GCODE_MIRROR_OFF_M) ? "disabled" : "enabled for axis(es): ",
     currentMachineState.mirrorX ? "X" : "", currentMachineState.mirrorY ? "Y" : "");
   return true;
 }

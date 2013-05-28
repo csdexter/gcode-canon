@@ -11,6 +11,9 @@
 
 #include "gcode-commons.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+
 /* Initialize parameter store, takes anonymous pointer to opaque data store, returns true on success */
 bool init_parameters(void *data);
 /* Fetch parameter index as double (according to the standard, all are double) */

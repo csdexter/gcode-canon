@@ -8,8 +8,6 @@
 #ifndef GCODE_COMMONS_H_
 #define GCODE_COMMONS_H_
 
-#include <stdbool.h>
-#include <stdint.h>
 
 /* How many discrete O words we support */
 #define GCODE_PROGRAM_CAPACITY 16

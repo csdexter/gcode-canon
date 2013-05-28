@@ -5,6 +5,7 @@
  *      Author: csdexter
  */
 
+#include <stdint.h>
 #include <stdio.h>
 
 #include "gcode-commons.h"
