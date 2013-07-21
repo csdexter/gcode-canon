@@ -21,7 +21,7 @@
 
 int main(int argc, char *argv[]) {
   FILE *parFile = fopen(GCODE_PARAMETER_STORE, "r");
-  FILE *inputFile = fopen(argv[1], "r");
+  FILE *inputFile = (argc > 1 ? fopen(argv[1], "r") : stdin);
   char line[0xFF];
 
   init_machine(NULL);
