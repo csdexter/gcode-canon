@@ -50,32 +50,40 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
 bool move_machine_arc(double X, double Y, double Z, double I, double J, double K, double R, bool ccw, TGCodePlaneMode plane, TGCodeFeedMode feedMode, uint16_t F) {
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ)) return false;
 
+  bool theLongWay = false;
+  /* Use the >180deg arc on user request */
+  if(!isnan(R) && signbit(R))
+    theLongWay = true;
+
   switch(plane) {
     case GCODE_PLANE_XY:
       if(!isnan(R)) {
         double d = hypot(machineX - X, machineY - Y);
-        I = (X - machineX) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
-        J = (Y - machineY) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
+        I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
+        J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? 1 : -1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
+        K = 0;
       } else R = hypot(I, J);
       break;
     case GCODE_PLANE_ZX:
       if(!isnan(R)) {
         double d = hypot(machineZ - Z, machineX - X);
-        K = (Z - machineZ) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
-        I = (X - machineX) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
+        K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
+        I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? 1 : -1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
+        J = 0;
       } else R = hypot(K, I);
       break;
     case GCODE_PLANE_YZ:
       if(!isnan(R)) {
         double d = hypot(machineY - Y, machineZ - Z);
-        J = (Y - machineY) / 2 + (ccw ? 1 : -1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
-        K = (Z - machineZ) / 2 + (ccw ? -1 : 1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
-      } else R = hypot(I, J);
+        J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
+        K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? 1 : -1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
+        I = 0;
+      } else R = hypot(J, K);
       break;
   }
 
   GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
-      machineX + I, machineY + J, machineZ + K, R,
+      machineX + I, machineY + J, machineZ + K, fabs(R),
       (plane == GCODE_PLANE_XY ? "XY" : (plane == GCODE_PLANE_ZX ? "ZX" : "YZ")),
       (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, F);
   machineX = X;

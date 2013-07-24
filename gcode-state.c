@@ -357,7 +357,8 @@ bool update_gcode_state(char *line) {
       break;
     case ARC:
       //TODO: investigate whether to treat full-circle feed as a cycle and add repeat count
-      move_machine_arc(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.I, currentGCodeState.J, currentGCodeState.K, currentGCodeState.R, currentGCodeState.ccw, currentGCodeState.system.plane, currentGCodeState.feedMode, currentGCodeState.F);
+      /* F is interpreted in whatever the current machine's units are */
+      move_machine_arc(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.I, currentGCodeState.J, currentGCodeState.K, currentGCodeState.R, currentGCodeState.ccw, currentGCodeState.system.plane, currentGCodeState.feedMode, (currentGCodeState.system.units == GCODE_UNITS_METRIC ? currentGCodeState.F : currentGCodeState.F * 25.4));
       break;
     case CYCLE:
       move_machine_cycle(currentGCodeState.cycle, currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.retractMode, currentGCodeState.L, currentGCodeState.P, currentGCodeState.Q, currentGCodeState.R, currentGCodeState.feedMode, currentGCodeState.F);
