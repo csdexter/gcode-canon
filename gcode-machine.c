@@ -39,6 +39,7 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
   machineY = Y;
   machineZ = Z;
   GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min", X, Y, Z, F);
+  GCODE_MACHINE_POSITION(X, Y, Z);
 
   return true;
 }
