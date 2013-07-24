@@ -26,7 +26,8 @@ bool seek_input(uint16_t lineNumber);
 uint16_t tell_input(void);
 /* Fetch the next character of input or EOF */
 char fetch_char_input(void);
-/* Fetch a complete line of input, stripped of whitespace, comments and \n; returns false if there's no more input to read */
+/* Fetch a complete line of input, stripped of whitespace, comments and \n; returns false if there's no more input to read.
+ * Call with NULL if you don't care about the line's program contents and only want to detect syntax errors. */
 bool fetch_line_input(char *line);
 /* Where does O<n> start? */
 uint16_t get_program_input(uint16_t program);

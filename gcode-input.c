@@ -26,15 +26,14 @@ static uint8_t programCount;
 
 
 bool init_input(void *data) {
-  char dummy[0xFF];
-
   input = (FILE *)data;
   memset(&programs, 0x00, sizeof(programs));
   programCount = 0;
+
   GCODE_DEBUG("Input stream up, %d program table entries available", GCODE_PROGRAM_CAPACITY);
   setlocale(LC_ALL, "C");
   display_machine_message("STA: Scanning input for programs (O words)");
-  while(fetch_line_input(dummy));
+  while(fetch_line_input(NULL));
   rewind_input();
 
   return true;
@@ -113,7 +112,8 @@ bool fetch_line_input(char *line) {
         c = fetch_char_input();
       }
       commsg[j] = '\0';
-      if(!strncmp(commsg, "MSG,", strlen("MSG,")))
+      /* We shouldn't output messages if we were called in test mode */
+      if(!strncmp(commsg, "MSG,", strlen("MSG,")) && line)
         display_machine_message(&commsg[strlen("MSG,")]);
 
       continue;
@@ -139,14 +139,16 @@ bool fetch_line_input(char *line) {
           programs[programCount].offset = tell_input() + 1; /* The line immediately after the O word */
           programCount++;
         } else display_machine_message("PER: Program table overflow!");
+      } else {
+        /* TODO: support N */
       }
 
       continue;
     }
 
-    line[i++] = c; /* Otherwise add to the line buffer */
+    if(line) line[i++] = c; /* Otherwise add to the line buffer */
   }
-  line[i] = '\0';
+  if(line) line[i] = '\0';
 
   return c == EOF ? false : true;
 }
