@@ -167,7 +167,7 @@ bool update_gcode_state(char *line) {
   if(have_gcode_word('M', 1, 52)) change_tool_machine(GCODE_MACHINE_NO_TOOL);
   if((arg = have_gcode_word('M', 2, GCODE_PROBE_PART, GCODE_PROBE_TOOL))) select_probeinput_machine(arg);
   if((arg = have_gcode_word('M', 2, GCODE_PROBE_ONETOUCH, GCODE_PROBE_TWOTOUCH))) select_probemode_machine(arg);
-  if((arg = have_gcode_word('M', 3, GCODE_SPINDLE_CW, GCODE_SPINDLE_CW, GCODE_SPINDLE_STOP))) start_spindle_machine(arg);
+  if((arg = have_gcode_word('M', 3, GCODE_SPINDLE_CW, GCODE_SPINDLE_CCW, GCODE_SPINDLE_STOP))) start_spindle_machine(arg);
   if((arg = have_gcode_word('M', 5, GCODE_COOL_MIST, GCODE_COOL_FLOOD, GCODE_COOL_OFF_MF, GCODE_COOL_SHOWER, GCODE_COOL_OFF_S))) start_coolant_machine(arg);
   if((arg = have_gcode_word('M', 2, GCODE_COOLSPIN_CW, GCODE_COOLSPIN_CCW))) {
     start_coolant_machine(GCODE_COOL_FLOOD);

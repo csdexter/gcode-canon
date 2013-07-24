@@ -38,7 +38,10 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
   machineX = X;
   machineY = Y;
   machineZ = Z;
-  GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min", X, Y, Z, F);
+  if(F == GCODE_MACHINE_FEED_TRAVERSE)
+    GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", X, Y, Z)
+  else
+    GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min", X, Y, Z, F);
   GCODE_MACHINE_POSITION(X, Y, Z);
 
   return true;
@@ -136,14 +139,15 @@ bool start_spindle_machine(TGCodeSpindleMode direction) {
 
   if((currentMachineState.spindleCW && direction == GCODE_SPINDLE_CW) ||
     (currentMachineState.spindleCCW && direction == GCODE_SPINDLE_CCW)) return true;
-  if(!(currentMachineState.spindleCW || currentMachineState.spindleCCW)) {
-    if(direction == GCODE_SPINDLE_CW) currentMachineState.spindleCW = true;
-    else currentMachineState.spindleCCW = true;
-    GCODE_DEBUG("Spindle started %s at %5drpm", (direction == GCODE_SPINDLE_CW) ? "clockwise" : "counterclockwise",
-          spindleSpeed);
-  } else if(direction == GCODE_SPINDLE_STOP) {
+  if(direction == GCODE_SPINDLE_STOP) {
     currentMachineState.spindleCW = currentMachineState.spindleCCW = false;
     GCODE_DEBUG("Spindle stopped");
+  } else if(!(currentMachineState.spindleCW || currentMachineState.spindleCCW)) {
+    if(direction == GCODE_SPINDLE_CW) currentMachineState.spindleCW = true;
+    else currentMachineState.spindleCCW = true;
+    GCODE_DEBUG("Spindle started %s at %5drpm",
+        (direction == GCODE_SPINDLE_CW) ? "clockwise" : "counterclockwise",
+        spindleSpeed);
   } else return false; /* Won't switch direction while running */
 
   return true;
