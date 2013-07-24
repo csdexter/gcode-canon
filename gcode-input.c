@@ -56,7 +56,7 @@ bool seek_input(uint16_t lineNumber) {
   if(lineNumber < currentLine) rewind_input();
 
   dummy = (char *)malloc(0xFF);
-  result = dummy; /* Prevent un-initialised usage */
+  result = dummy; /* Prevent uninitialized usage */
 
   for(i = currentLine; i < lineNumber && result; i++)
     result = fgets(dummy, 0xFF, input);
@@ -113,7 +113,8 @@ bool fetch_line_input(char *line) {
         c = fetch_char_input();
       }
       commsg[j] = '\0';
-      if(!strncmp(commsg, "MSG,", strlen("MSG,"))) display_machine_message(&commsg[3]);
+      if(!strncmp(commsg, "MSG,", strlen("MSG,")))
+        display_machine_message(&commsg[strlen("MSG,")]);
 
       continue;
     }
