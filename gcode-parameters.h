@@ -20,6 +20,8 @@ bool init_parameters(void *data);
 double fetch_parameter(uint16_t index);
 /* Queue parameter index for update with newValue, returns true if ok and false if index is readonly */
 bool update_parameter(uint16_t index, double newValue);
+/* Immediately update parameter index with newValue, returns true if ok and false if index is readonly */
+bool set_parameter(uint16_t index, double newValue);
 /* Commit all update_parameter() changes to permanent store, returns false if any error occurred when accessing the data store */
 bool commit_parameters(void);
 /* Save all persistent parameters to data store in preparation for shutdown, returns false if any errors occur */

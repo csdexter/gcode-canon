@@ -143,6 +143,15 @@ static char *_skip_gcode_digits(char *string) {
 bool init_gcode_state(void *data) {
   stillRunning = true;
 
+  set_parameter(71, +1.0E+0); /* Unity scaling */
+  set_parameter(3005, ((uint8_t)fetch_parameter(3005) & ~(GCODE_STATE_PF_ABSOLUTE | GCODE_STATE_PF_IMPERIAL)) | (currentGCodeState.system.absolute == GCODE_ABSOLUTE ? GCODE_STATE_PF_ABSOLUTE : 0x00) | (currentGCodeState.system.units == GCODE_UNITS_INCH ? GCODE_STATE_PF_IMPERIAL : 0x00));
+  /* By default, logical origin == G-Code origin */
+  set_parameter(5211, currentGCodeState.system.X);
+  set_parameter(5212, currentGCodeState.system.Y);
+  set_parameter(5213, currentGCodeState.system.Z);
+  /* WCS #1 is selected */
+  set_parameter(5220, 1);
+
   GCODE_DEBUG("G-Code state machine up, defaults loaded");
 
   return true;
@@ -152,7 +161,7 @@ bool update_gcode_state(char *line) {
   uint8_t arg;
 
   parseCache.line = line;
-  parseCache.word = ' '; /* because space is not a G-Code word and all spaces have been stripped from line */
+  parseCache.word = ' '; /* because space is not a G-Code word and all spaces have already been stripped from line */
   parseCache.at = NULL;
 
   if((arg = have_gcode_word('G', 2, GCODE_FEED_INVTIME, GCODE_FEED_PERMINUTE))) currentGCodeState.feedMode = arg;

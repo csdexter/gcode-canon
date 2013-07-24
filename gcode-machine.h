@@ -17,6 +17,11 @@
 #define GCODE_MACHINE_NO_TOOL 0
 #define GCODE_MACHINE_FEED_TRAVERSE 0xEA60U /* 1000mm/sec, none of the hardware we're targeting is that fast so safe to use as flag */
 #define GCODE_MACHINE_POSITION(x, y, z) GCODE_DEBUG_RAW("MPOS,%4.2f,%4.2f,%4.2f", x, y, z)
+#define GCODE_MACHINE_PF_EXACTSTOP 0x04
+#define GCODE_MACHINE_PF_OVERRIDES 0x02
+#define GCODE_MACHINE_PF_FEEDHOLD 0x01
+#define GCODE_MACHINE_PF_MIRROR_Y 0x02
+#define GCODE_MACHINE_PF_MIRROR_X 0x01
 
 
 typedef union {

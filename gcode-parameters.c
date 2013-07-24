@@ -30,6 +30,7 @@ bool init_parameters(void *data) {
 
   parameterStore = (FILE *)data;
 
+  /* binary 0x00 may not result in float +0.0E+1, so do it by hand */
   for(i = 0; i < GCODE_PARAMETER_COUNT; i++) parameters[i] = 0.0;
   for(i = 0; i < GCODE_PARAMETER_UPDATES; i++) {
     parameterUpdates[i].index = 0;
@@ -44,7 +45,12 @@ bool init_parameters(void *data) {
     i++;
   }
   free(line);
-  GCODE_DEBUG("Parameters up, %d restored from non-volatile storage, %d available", i, GCODE_PARAMETER_COUNT);
+  GCODE_DEBUG("%d parameters restored from non-volatile storage, %d available", i, GCODE_PARAMETER_COUNT);
+
+  /* Now handle the special cases */
+  parameters[0] = +0.0E+0; /* #0 is always zero */
+  /* #3004,3007,5161-5169,5181-5189: will be set by init_machine() */
+  /* #71,3005,4001-4018,5211-5219,5220: will be set by init_gcode_state() */
 
   return true;
 }
@@ -54,7 +60,7 @@ double fetch_parameter(uint16_t index) {
 }
 
 bool update_parameter(uint16_t index, double newValue) {
-  if(!index) return false; // #0 is readonly
+  if(!index || index > 5400) return false; // #0 is readonly and there's only 5400 of them
 
   if(parameterUpdateCount < GCODE_PARAMETER_UPDATES) {
     parameterUpdateCount++;
@@ -63,6 +69,14 @@ bool update_parameter(uint16_t index, double newValue) {
 
     return true;
   } else return false;
+}
+
+bool set_parameter(uint16_t index, double newValue) {
+  if(!index || index > 5400) return false; // #0 is readonly and there's only 5400 of them
+
+  parameters[index] = newValue;
+
+  return true;
 }
 
 bool commit_parameters(void){

@@ -12,6 +12,7 @@
 #include "gcode-commons.h"
 #include "gcode-machine.h"
 #include "gcode-debugcon.h"
+#include "gcode-parameters.h"
 
 
 static double machineX, machineY, machineZ;
@@ -26,6 +27,13 @@ bool init_machine(void *data) {
   enable_override_machine(GCODE_OVERRIDE_ON);
   stillRunning = true;
   enable_power_machine(GCODE_SERVO_ON);
+  /* By default our home and zero positions are at (0, 0, 0) */
+  set_parameter(5161, machineX);
+  set_parameter(5162, machineY);
+  set_parameter(5163, machineZ);
+  set_parameter(5181, machineX);
+  set_parameter(5182, machineY);
+  set_parameter(5183, machineZ);
 
   GCODE_DEBUG("Machine is up");
 
@@ -246,25 +254,26 @@ bool start_coolant_machine(TGCodeCoolantMode mode) {
 }
 
 bool enable_override_machine(TGCodeOverrideMode mode) {
-  currentMachineState.overridesEnabled = (mode == GCODE_OVERRIDE_ON) ? true : false;
+  currentMachineState.overridesEnabled = (mode == GCODE_OVERRIDE_ON);
+  set_parameter(3004, ((uint8_t)fetch_parameter(3004) & ~GCODE_MACHINE_PF_OVERRIDES) | (currentMachineState.overridesEnabled ? GCODE_MACHINE_PF_OVERRIDES : 0x00));
 
-  GCODE_DEBUG("Feed and speed override switches %s", (mode == GCODE_OVERRIDE_ON ? "enabled" : "disabled"));
+  GCODE_DEBUG("Feed and speed override switches %s", (currentMachineState.overridesEnabled ? "enabled" : "disabled"));
 
   return true;
 }
 
 bool select_probeinput_machine(TGCodeProbeInput input) {
-  currentMachineState.probeSource = (input == GCODE_PROBE_TOOL) ? true : false;
+  currentMachineState.probeSource = (input == GCODE_PROBE_TOOL);
 
-  GCODE_DEBUG("Probe signal source set to %s", (input == GCODE_PROBE_PART) ? "probe tool" : "tool height sensor");
+  GCODE_DEBUG("Probe signal source set to %s", currentMachineState.probeSource ? "probe tool" : "tool height sensor");
 
   return true;
 }
 
 bool select_probemode_machine(TGCodeProbeMode mode) {
-  currentMachineState.probeMode = (mode == GCODE_PROBE_TWOTOUCH) ? true : false;
+  currentMachineState.probeMode = (mode == GCODE_PROBE_TWOTOUCH);
 
-  GCODE_DEBUG("Probing mode set to %s stroke", (mode == GCODE_PROBE_ONETOUCH) ? "single" : "double");
+  GCODE_DEBUG("Probing mode set to %s stroke", currentMachineState.probeMode ? "single" : "double");
 
   return true;
 }
@@ -276,6 +285,7 @@ bool enable_mirror_machine(TGCodeMirrorMachine mode) {
     currentMachineState.mirrorX = false;
     currentMachineState.mirrorY = false;
   }
+  set_parameter(3005, ((uint8_t)fetch_parameter(3005) & ~(GCODE_MACHINE_PF_MIRROR_X | GCODE_MACHINE_PF_MIRROR_Y)) | (currentMachineState.mirrorX ? GCODE_MACHINE_PF_MIRROR_X : 0x00) | (currentMachineState.mirrorY ? GCODE_MACHINE_PF_MIRROR_Y : 0x00));
 
   GCODE_DEBUG("Machine mirroring %s%s%s", (mode == GCODE_MIRROR_OFF_M) ? "disabled" : "enabled for axis(es): ",
     currentMachineState.mirrorX ? "X" : "", currentMachineState.mirrorY ? "Y" : "");
@@ -284,6 +294,7 @@ bool enable_mirror_machine(TGCodeMirrorMachine mode) {
 
 bool select_pathmode_machine(TGCodePathControl mode) {
   currentMachineState.exactStopCheck = (mode == GCODE_EXACTSTOPCHECK_ON);
+  set_parameter(3004, ((uint8_t)fetch_parameter(3004) & ~GCODE_MACHINE_PF_EXACTSTOP) | (currentMachineState.exactStopCheck ? GCODE_MACHINE_PF_EXACTSTOP : 0x00));
 
   GCODE_DEBUG("Exact stop check (path control) %s", currentMachineState.exactStopCheck ? "on" : "off");
 

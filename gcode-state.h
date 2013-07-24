@@ -14,6 +14,9 @@
 
 #include "gcode-commons.h"
 
+#define GCODE_STATE_PF_ABSOLUTE 0x40
+#define GCODE_STATE_PF_IMPERIAL 0x10
+
 
 typedef enum {
   OFF,

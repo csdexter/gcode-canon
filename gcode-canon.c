@@ -24,8 +24,8 @@ int main(int argc, char *argv[]) {
   FILE *inputFile = (argc > 1 ? fopen(argv[1], "r") : stdin);
   char line[0xFF];
 
-  init_machine(NULL);
   init_parameters(parFile);
+  init_machine(NULL);
   init_stacks(NULL);
   init_tools(NULL);
   init_input(inputFile);
@@ -37,8 +37,8 @@ int main(int argc, char *argv[]) {
   done_input();
   done_tools();
   done_stacks();
-  done_parameters();
   done_machine();
+  done_parameters();
 
   return 0;
 }
