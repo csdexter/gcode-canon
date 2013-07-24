@@ -60,7 +60,7 @@ double fetch_parameter(uint16_t index) {
 }
 
 bool update_parameter(uint16_t index, double newValue) {
-  if(!index || index > 5400) return false; // #0 is readonly and there's only 5400 of them
+  if(!index || index > GCODE_PARAMETER_COUNT) return false; // #0 is readonly and there's only 5400 of them
 
   if(parameterUpdateCount < GCODE_PARAMETER_UPDATES) {
     parameterUpdateCount++;
@@ -72,7 +72,7 @@ bool update_parameter(uint16_t index, double newValue) {
 }
 
 bool set_parameter(uint16_t index, double newValue) {
-  if(!index || index > 5400) return false; // #0 is readonly and there's only 5400 of them
+  if(!index || index > GCODE_PARAMETER_COUNT) return false; // #0 is readonly and there's only 5400 of them
 
   parameters[index] = newValue;
 

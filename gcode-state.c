@@ -143,14 +143,17 @@ static char *_skip_gcode_digits(char *string) {
 bool init_gcode_state(void *data) {
   stillRunning = true;
 
-  set_parameter(71, +1.0E+0); /* Unity scaling */
-  set_parameter(3005, ((uint8_t)fetch_parameter(3005) & ~(GCODE_STATE_PF_ABSOLUTE | GCODE_STATE_PF_IMPERIAL)) | (currentGCodeState.system.absolute == GCODE_ABSOLUTE ? GCODE_STATE_PF_ABSOLUTE : 0x00) | (currentGCodeState.system.units == GCODE_UNITS_INCH ? GCODE_STATE_PF_IMPERIAL : 0x00));
+  set_parameter(GCODE_PARM_SCALING, +1.0E+0); /* Unity scaling */
+  set_parameter(GCODE_PARM_BITFIELD2,
+      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD2) & ~(GCODE_STATE_PF_ABSOLUTE | GCODE_STATE_PF_IMPERIAL)) |
+      (currentGCodeState.system.absolute == GCODE_ABSOLUTE ? GCODE_STATE_PF_ABSOLUTE : 0x00) |
+      (currentGCodeState.system.units == GCODE_UNITS_INCH ? GCODE_STATE_PF_IMPERIAL : 0x00));
   /* By default, logical origin == G-Code origin */
-  set_parameter(5211, currentGCodeState.system.X);
-  set_parameter(5212, currentGCodeState.system.Y);
-  set_parameter(5213, currentGCodeState.system.Z);
+  set_parameter(GCODE_PARM_FIRST_LOCAL + 0, currentGCodeState.system.X);
+  set_parameter(GCODE_PARM_FIRST_LOCAL + 1, currentGCodeState.system.Y);
+  set_parameter(GCODE_PARM_FIRST_LOCAL + 2, currentGCodeState.system.Z);
   /* WCS #1 is selected */
-  set_parameter(5220, 1);
+  set_parameter(GCODE_PARM_CURRENT_WCS, 1);
 
   GCODE_DEBUG("G-Code state machine up, defaults loaded");
 

@@ -28,12 +28,12 @@ bool init_machine(void *data) {
   stillRunning = true;
   enable_power_machine(GCODE_SERVO_ON);
   /* By default our home and zero positions are at (0, 0, 0) */
-  set_parameter(5161, machineX);
-  set_parameter(5162, machineY);
-  set_parameter(5163, machineZ);
-  set_parameter(5181, machineX);
-  set_parameter(5182, machineY);
-  set_parameter(5183, machineZ);
+  set_parameter(GCODE_PARM_FIRST_HOME + 0, machineX);
+  set_parameter(GCODE_PARM_FIRST_HOME + 1, machineY);
+  set_parameter(GCODE_PARM_FIRST_HOME + 2, machineZ);
+  set_parameter(GCODE_PARM_FIRST_ZERO + 0, machineX);
+  set_parameter(GCODE_PARM_FIRST_ZERO + 1, machineY);
+  set_parameter(GCODE_PARM_FIRST_ZERO + 2, machineZ);
 
   GCODE_DEBUG("Machine is up");
 
@@ -255,7 +255,9 @@ bool start_coolant_machine(TGCodeCoolantMode mode) {
 
 bool enable_override_machine(TGCodeOverrideMode mode) {
   currentMachineState.overridesEnabled = (mode == GCODE_OVERRIDE_ON);
-  set_parameter(3004, ((uint8_t)fetch_parameter(3004) & ~GCODE_MACHINE_PF_OVERRIDES) | (currentMachineState.overridesEnabled ? GCODE_MACHINE_PF_OVERRIDES : 0x00));
+  set_parameter(GCODE_PARM_BITFIELD1,
+      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD1) & ~GCODE_MACHINE_PF_OVERRIDES) |
+      (currentMachineState.overridesEnabled ? GCODE_MACHINE_PF_OVERRIDES : 0x00));
 
   GCODE_DEBUG("Feed and speed override switches %s", (currentMachineState.overridesEnabled ? "enabled" : "disabled"));
 
@@ -285,7 +287,10 @@ bool enable_mirror_machine(TGCodeMirrorMachine mode) {
     currentMachineState.mirrorX = false;
     currentMachineState.mirrorY = false;
   }
-  set_parameter(3005, ((uint8_t)fetch_parameter(3005) & ~(GCODE_MACHINE_PF_MIRROR_X | GCODE_MACHINE_PF_MIRROR_Y)) | (currentMachineState.mirrorX ? GCODE_MACHINE_PF_MIRROR_X : 0x00) | (currentMachineState.mirrorY ? GCODE_MACHINE_PF_MIRROR_Y : 0x00));
+  set_parameter(GCODE_PARM_BITFIELD2,
+      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD2) & ~(GCODE_MACHINE_PF_MIRROR_X | GCODE_MACHINE_PF_MIRROR_Y)) |
+      (currentMachineState.mirrorX ? GCODE_MACHINE_PF_MIRROR_X : 0x00) |
+      (currentMachineState.mirrorY ? GCODE_MACHINE_PF_MIRROR_Y : 0x00));
 
   GCODE_DEBUG("Machine mirroring %s%s%s", (mode == GCODE_MIRROR_OFF_M) ? "disabled" : "enabled for axis(es): ",
     currentMachineState.mirrorX ? "X" : "", currentMachineState.mirrorY ? "Y" : "");
@@ -294,7 +299,9 @@ bool enable_mirror_machine(TGCodeMirrorMachine mode) {
 
 bool select_pathmode_machine(TGCodePathControl mode) {
   currentMachineState.exactStopCheck = (mode == GCODE_EXACTSTOPCHECK_ON);
-  set_parameter(3004, ((uint8_t)fetch_parameter(3004) & ~GCODE_MACHINE_PF_EXACTSTOP) | (currentMachineState.exactStopCheck ? GCODE_MACHINE_PF_EXACTSTOP : 0x00));
+  set_parameter(GCODE_PARM_BITFIELD1,
+      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD1) & ~GCODE_MACHINE_PF_EXACTSTOP) |
+      (currentMachineState.exactStopCheck ? GCODE_MACHINE_PF_EXACTSTOP : 0x00));
 
   GCODE_DEBUG("Exact stop check (path control) %s", currentMachineState.exactStopCheck ? "on" : "off");
 
