@@ -54,6 +54,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
   /* Use the >180deg arc on user request */
   if(!isnan(R) && signbit(R))
     theLongWay = true;
+    R *= -1;
 
   switch(plane) {
     case GCODE_PLANE_XY:
@@ -83,7 +84,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
   }
 
   GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
-      machineX + I, machineY + J, machineZ + K, fabs(R),
+      machineX + I, machineY + J, machineZ + K, R,
       (plane == GCODE_PLANE_XY ? "XY" : (plane == GCODE_PLANE_ZX ? "ZX" : "YZ")),
       (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, F);
   machineX = X;
