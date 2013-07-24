@@ -35,8 +35,8 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
 
     if(!isnan(X) && system->units == GCODE_UNITS_INCH) X *= 25.4;
     pX = X;
-    X = system->X + (isnan(X) ? system->pR : X) * cos((isnan(Y) ? system->pT : Y) * 0.0174532925);
-    Y = system->Y + (isnan(X) ? system->pR : X) * sin((isnan(Y) ? system->pT : Y) * 0.0174532925);
+    X = system->X + (isnan(pX) ? system->pR : pX) * cos((isnan(pY) ? system->pT : pY) * 0.0174532925);
+    Y = system->Y + (isnan(pX) ? system->pR : pX) * sin((isnan(pY) ? system->pT : pY) * 0.0174532925);
     if(!isnan(pX)) system->pR = pX;
     if(!isnan(pY)) system->pT = pY;
   }
