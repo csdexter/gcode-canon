@@ -1,0 +1,5 @@
+* add expressions and predefined functions
+* add rotational axes (A, B, C)
+* fix all remaining weird stuff in NOTES (such as being unable to parse G00.000 as G00)
+* complete the testing suite
+* add parameter mirroring for system status (e.g. tool table)
