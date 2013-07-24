@@ -352,7 +352,8 @@ bool update_gcode_state(char *line) {
       move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
       break;
     case LINEAR:
-      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.feedMode, currentGCodeState.F);
+      /* F is interpreted in whatever the current machine's units are */
+      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.feedMode, (currentGCodeState.system.units == GCODE_UNITS_METRIC ? currentGCodeState.F : currentGCodeState.F * 25.4));
       break;
     case ARC:
       //TODO: investigate whether to treat full-circle feed as a cycle and add repeat count
