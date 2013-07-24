@@ -49,6 +49,7 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
 
 bool move_machine_arc(double X, double Y, double Z, double I, double J, double K, double R, bool ccw, TGCodePlaneMode plane, TGCodeFeedMode feedMode, uint16_t F) {
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ)) return false;
+
   switch(plane) {
     case GCODE_PLANE_XY:
       if(!isnan(R)) {
@@ -80,6 +81,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
   machineX = X;
   machineY = Y;
   machineZ = Z;
+  GCODE_MACHINE_POSITION(X, Y, Z);
 
   return true;
 }
