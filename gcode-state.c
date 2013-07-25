@@ -273,7 +273,7 @@ bool update_gcode_state(char *line) {
   }
   if((arg = have_gcode_word('G', 6, GCODE_MOVE_RAPID, GCODE_MOVE_FEED, GCODE_MODE_ARC_CW, GCODE_MODE_ARC_CCW, GCODE_MODE_CIRCLE_CW, GCODE_MODE_CIRCLE_CCW))) {
     currentGCodeState.motionMode = _map_move_to_motion(arg, &currentGCodeState.ccw);
-    if(!(arg == GCODE_MOVE_RAPID + 100 || arg == GCODE_MOVE_FEED)) { /* It's an arc, fetch I,J,K,R now for later */
+    if(!(arg == GCODE_MOVE_RAPID + 100 || arg == GCODE_MOVE_FEED)) { /* It's an arc or circle, fetch I,J,K,R now for later */
       currentGCodeState.I = get_gcode_word_real('I');
       currentGCodeState.J = get_gcode_word_real('J');
       currentGCodeState.K = get_gcode_word_real('K');
@@ -368,7 +368,7 @@ bool update_gcode_state(char *line) {
       move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.feedMode, (currentGCodeState.system.units == GCODE_UNITS_METRIC ? currentGCodeState.F : currentGCodeState.F * 25.4));
       break;
     case ARC:
-      //TODO: investigate whether to treat full-circle feed as a cycle and add repeat count
+      //TODO: implement full-circle as a repeat of arcs, add new move_machine_ call for that
       /* F is interpreted in whatever the current machine's units are */
       move_machine_arc(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.I, currentGCodeState.J, currentGCodeState.K, currentGCodeState.R, currentGCodeState.ccw, currentGCodeState.system.plane, currentGCodeState.feedMode, (currentGCodeState.system.units == GCODE_UNITS_METRIC ? currentGCodeState.F : currentGCodeState.F * 25.4));
       break;

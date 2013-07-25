@@ -1,4 +1,4 @@
-(testing rapid movements)
+(testing circular movements)
 (machine setup)
 M05 S600
 M09
