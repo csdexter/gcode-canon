@@ -30,18 +30,17 @@ Y15
 G16 X5 Y45
 X10 Y135
 
-(control mirroring)
+(machine mirroring)
 G15 X10 Y10 Z10
 X15
 Y12 X8
 X10 Y10
-(mirror X axis around x=15mm)
-G22 X15
-X10 Y10
+(mirror X axis)
+M21
 X15
 Y12 X8
 X10 Y10
 (no mirror)
-G23
+M23
 
 M02

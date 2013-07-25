@@ -43,16 +43,17 @@ bool init_machine(void *data) {
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, uint16_t F) {
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ)) return false;
 
-  //Apply machine mirroring
+  //TODO: fix, we need double coordinates while mirroring
+  /* Check for and apply machine mirroring */
   machineX += (X - machineX) * (currentMachineState.mirrorX ? -1 : 1);
   machineY += (Y - machineY) * (currentMachineState.mirrorY ? -1 : 1);
   machineZ = Z;
 
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
-    GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", X, Y, Z)
+    GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", machineX, machineY, machineZ)
   else
-    GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min", X, Y, Z, F);
-  GCODE_MACHINE_POSITION(X, Y, Z);
+    GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min", machineX, machineY, machineZ, F);
+  GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
 
   return true;
 }
@@ -68,6 +69,8 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
 
   switch(plane) {
     case GCODE_PLANE_XY:
+      //TODO: implement the rest of machine mirroring for arcs
+      if(currentMachineState.mirrorX ^ currentMachineState.mirrorY) ccw = !ccw;
       if(!isnan(R)) {
         double d = hypot(machineX - X, machineY - Y);
         I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
@@ -76,6 +79,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
       } else R = hypot(I, J);
       break;
     case GCODE_PLANE_ZX:
+      if(currentMachineState.mirrorX) ccw = !ccw;
       if(!isnan(R)) {
         double d = hypot(machineZ - Z, machineX - X);
         K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
@@ -84,6 +88,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
       } else R = hypot(K, I);
       break;
     case GCODE_PLANE_YZ:
+      if(currentMachineState.mirrorY) ccw = !ccw;
       if(!isnan(R)) {
         double d = hypot(machineY - Y, machineZ - Z);
         J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
@@ -100,7 +105,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
   machineX = X;
   machineY = Y;
   machineZ = Z;
-  GCODE_MACHINE_POSITION(X, Y, Z);
+  GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
 
   return true;
 }
