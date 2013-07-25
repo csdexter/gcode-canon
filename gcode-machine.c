@@ -43,9 +43,11 @@ bool init_machine(void *data) {
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, uint16_t F) {
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ)) return false;
 
-  machineX = X;
-  machineY = Y;
+  //Apply machine mirroring
+  machineX += (X - machineX) * (currentMachineState.mirrorX ? -1 : 1);
+  machineY += (Y - machineY) * (currentMachineState.mirrorY ? -1 : 1);
   machineZ = Z;
+
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
     GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", X, Y, Z)
   else
