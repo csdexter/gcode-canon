@@ -207,17 +207,18 @@ bool update_gcode_state(char *line) {
   if((arg = have_gcode_word('G', 6, GCODE_WCS_1, GCODE_WCS_2, GCODE_WCS_3, GCODE_WCS_4, GCODE_WCS_5, GCODE_WCS_6))) currentGCodeState.system.current = arg;
   if((arg = have_gcode_word('M', 3, GCODE_MIRROR_X, GCODE_MIRROR_Y, GCODE_MIRROR_OFF_M))) enable_mirror_machine(arg);
   if((arg = have_gcode_word('G', 2, GCODE_MIRROR_ON, GCODE_MIRROR_OFF_S))) {
+    //TODO: investigate whether it's worth merging with M21-M23 to avoid duplicating code
     currentGCodeState.system.mirror.mode = arg;
-    currentGCodeState.system.mirror.X = get_gcode_word_real('X');
-    currentGCodeState.system.mirror.Y = get_gcode_word_real('Y');
-    currentGCodeState.system.mirror.Z = get_gcode_word_real('Z');
+    currentGCodeState.system.mirror.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
+    currentGCodeState.system.mirror.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);
+    currentGCodeState.system.mirror.Z = get_gcode_word_real_default('Z', currentGCodeState.system.Z);
     currentGCodeState.axisWordsConsumed = true;
   }
   if((arg = have_gcode_word('G', 2, GCODE_ROTATION_ON, GCODE_ROTATION_OFF))) {
     currentGCodeState.system.rotation.mode = arg;
-    currentGCodeState.system.rotation.X = get_gcode_word_real('X');
-    currentGCodeState.system.rotation.Y = get_gcode_word_real('Y');
-    currentGCodeState.system.rotation.Z = get_gcode_word_real('Z');
+    currentGCodeState.system.rotation.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
+    currentGCodeState.system.rotation.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);
+    currentGCodeState.system.rotation.Z = get_gcode_word_real_default('Z', currentGCodeState.system.Z);
     currentGCodeState.system.rotation.R = get_gcode_word_integer('R');
     currentGCodeState.axisWordsConsumed = true;
   }
@@ -527,6 +528,13 @@ uint8_t have_gcode_word(char word, uint8_t argc, ...) {
 double get_gcode_word_real(char word) {
   if(!_refresh_gcode_parse_cache(word)) return NAN;
   else return read_gcode_real(&parseCache.at[1]);
+}
+
+double get_gcode_word_real_default(char word, double defVal) {
+  double tmp = get_gcode_word_real(word);
+
+  if(isnan(tmp)) return defVal;
+  else return tmp;
 }
 
 uint32_t get_gcode_word_integer(char word) {

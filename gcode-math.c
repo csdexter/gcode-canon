@@ -60,36 +60,32 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
 
   //Apply coordinate system rotation
   if(system->rotation.mode == GCODE_ROTATION_ON) {
+    double oldX = X, oldY = Y, oldZ = Z;
+
     switch(system->plane) {
       case GCODE_PLANE_XY:
-        X = system->rotation.X +
-            hypot(X - system->rotation.X, Y - system->rotation.Y) *
-            cos(system->rotation.R * 0.0174532925 +
-                atan2(X - system->rotation.X, Y - system->rotation.Y));
-        Y = system->rotation.Y +
-            hypot(X - system->rotation.X, Y - system->rotation.Y) *
-            sin(system->rotation.R * 0.0174532925 +
-                atan2(X - system->rotation.X, Y - system->rotation.Y));
+        X = cos(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) -
+            sin(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) +
+            system->rotation.X;
+        Y = sin(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) -
+            cos(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) +
+            system->rotation.Y;
         break;
       case GCODE_PLANE_YZ:
-        Y = system->rotation.Y +
-            hypot(Y - system->rotation.Y, Z - system->rotation.Z) *
-            cos(system->rotation.R * 0.0174532925 +
-                atan2(Y - system->rotation.Y, Z - system->rotation.Z));
-        Z = system->rotation.Z +
-            hypot(Y - system->rotation.Y, Z - system->rotation.Z) *
-            sin(system->rotation.R * 0.0174532925 +
-                atan2(Y - system->rotation.Y, Z - system->rotation.Z));
+        Y = cos(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) -
+            sin(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) +
+            system->rotation.Y;
+        Z = sin(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) -
+            cos(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) +
+            system->rotation.Z;
         break;
       case GCODE_PLANE_ZX:
-        Z = system->rotation.Z +
-            hypot(Z - system->rotation.Z, X - system->rotation.X) *
-            cos(system->rotation.R * 0.0174532925 +
-                atan2(Z - system->rotation.Z, X - system->rotation.X));
-        X = system->rotation.X +
-            hypot(Z - system->rotation.Z, X - system->rotation.X) *
-            sin(system->rotation.R * 0.0174532925 +
-                atan2(Z - system->rotation.Z, X - system->rotation.X));
+        Z = cos(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) -
+            sin(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) +
+            system->rotation.Z;
+        X = sin(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) -
+            cos(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) +
+            system->rotation.X;
         break;
     }
   }
