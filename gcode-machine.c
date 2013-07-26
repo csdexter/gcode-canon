@@ -15,13 +15,13 @@
 #include "gcode-parameters.h"
 
 
-static double machineX, machineY, machineZ;
+static double machineX, machineY, machineZ, noMirrorX, noMirrorY;
 static uint32_t spindleSpeed;
 static TGCodeMachineState currentMachineState;
 static bool stillRunning, servoPower;
 
 bool init_machine(void *data) {
-  machineX = machineY = machineZ = 0.0;
+  machineX = machineY = machineZ = noMirrorX = noMirrorY = 0.0;
   currentMachineState.flags = 0x00;
   set_spindle_speed_machine(GCODE_MACHINE_LOWEST_RPM);
   enable_override_machine(GCODE_OVERRIDE_ON);
@@ -45,8 +45,14 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
 
   //TODO: fix, we need double coordinates while mirroring
   /* Check for and apply machine mirroring */
-  machineX += (X - machineX) * (currentMachineState.mirrorX ? -1 : 1);
-  machineY += (Y - machineY) * (currentMachineState.mirrorY ? -1 : 1);
+  if(currentMachineState.mirrorX) {
+    machineX -= X - noMirrorX;
+    noMirrorX = X;
+  } else machineX = X;
+  if(currentMachineState.mirrorY) {
+    machineY -= Y - noMirrorY;
+    noMirrorY = Y;
+  } else machineY = Y;
   machineZ = Z;
 
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
@@ -294,6 +300,10 @@ bool enable_mirror_machine(TGCodeMirrorMachine mode) {
     currentMachineState.mirrorX = false;
     currentMachineState.mirrorY = false;
   }
+
+  noMirrorX = machineX;
+  noMirrorY = machineY;
+
   set_parameter(GCODE_PARM_BITFIELD2,
       ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD2) & ~(GCODE_MACHINE_PF_MIRROR_X | GCODE_MACHINE_PF_MIRROR_Y)) |
       (currentMachineState.mirrorX ? GCODE_MACHINE_PF_MIRROR_X : 0x00) |
