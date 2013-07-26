@@ -67,7 +67,7 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
         X = cos(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) -
             sin(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) +
             system->rotation.X;
-        Y = sin(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) -
+        Y = sin(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) +
             cos(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) +
             system->rotation.Y;
         break;
@@ -75,7 +75,7 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
         Y = cos(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) -
             sin(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) +
             system->rotation.Y;
-        Z = sin(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) -
+        Z = sin(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) +
             cos(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) +
             system->rotation.Z;
         break;
@@ -83,7 +83,7 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
         Z = cos(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) -
             sin(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) +
             system->rotation.Z;
-        X = sin(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) -
+        X = sin(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) +
             cos(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) +
             system->rotation.X;
         break;
