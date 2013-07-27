@@ -318,6 +318,12 @@ bool update_gcode_state(char *line) {
         break;
       case STORE:
         switch(get_gcode_word_integer('L')) {
+          case 1: {
+            TGCodeTool tool = fetch_tool(get_gcode_word_integer('P'));
+
+            tool.diameter = to_metric_math(currentGCodeState.system, get_gcode_word_real('R')) * 2.0;
+            update_tool(tool);
+          } break;
           case 2: {
             uint16_t wcs = (get_gcode_word_integer('P') - 1) * GCODE_PARM_WCS_SIZE;
 
@@ -328,11 +334,11 @@ bool update_gcode_state(char *line) {
             commit_parameters();
           } break;
           case 3: {
-            uint8_t tool = get_gcode_word_integer('P');
+            TGCodeTool tool = fetch_tool(get_gcode_word_integer('P'));
 
-            if(have_gcode_word('H', 0)) update_parameter(GCODE_TOOL_LEN_BASE + tool, to_metric_math(currentGCodeState.system, get_gcode_word_real('H')));
-            if(have_gcode_word('D', 0)) update_parameter(GCODE_TOOL_DIAM_BASE + tool, to_metric_math(currentGCodeState.system, get_gcode_word_real('D')));
-            commit_parameters();
+            if(have_gcode_word('H', 0)) tool.length = to_metric_math(currentGCodeState.system, get_gcode_word_real('H'));
+            if(have_gcode_word('D', 0)) tool.diameter = to_metric_math(currentGCodeState.system, get_gcode_word_real('D'));
+            update_tool(tool);
           } break;
           default:
             break;

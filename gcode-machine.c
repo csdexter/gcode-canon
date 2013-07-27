@@ -174,8 +174,8 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
 
   switch(mode) {
     case GCODE_CYCLE_HOME:
-      //TODO: obey home search speed
-      move_machine_line(fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X), fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y), fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z), GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
+      //TODO: obey per axis home speed
+      move_machine_line(fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X), fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y), fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z), GCODE_FEED_PERMINUTE, fetch_parameter(GCODE_PARM_FEED_HOME_X));
       break;
     case GCODE_CYCLE_RETURN:
       move_machine_line(beforeHomeX, beforeHomeY, beforeHomeZ, GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
@@ -282,7 +282,11 @@ bool preselect_tool_machine(uint8_t tool) {
 bool change_tool_machine(uint8_t tool) {
   if(!servoPower) return false;
 
-  if(tool) GCODE_DEBUG("Performing ATC to tool %d", tool)
+  if(tool) {
+    GCODE_DEBUG("Performing ATC to tool %d", tool)
+    fetch_tool(tool);
+    set_parameter(GCODE_PARM_CURRENT_TOOL, tool);
+  }
   else GCODE_DEBUG("Unloading spindle");
 
   return true;

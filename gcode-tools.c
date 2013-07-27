@@ -38,9 +38,9 @@ TGCodeTool fetch_tool(uint8_t index) {
 bool update_tool(TGCodeTool tool) {
   if(tool.index == currentTool.index) currentTool = tool;
 
-  return update_parameter(GCODE_TOOL_TYPE_BASE + tool.index, currentTool.type) &&
-    update_parameter(GCODE_TOOL_DIAM_BASE + tool.index, currentTool.diameter) &&
-    update_parameter(GCODE_TOOL_LEN_BASE + tool.index, currentTool.length);
+  return set_parameter(GCODE_TOOL_TYPE_BASE + tool.index, currentTool.type) &&
+    set_parameter(GCODE_TOOL_DIAM_BASE + tool.index, currentTool.diameter) &&
+    set_parameter(GCODE_TOOL_LEN_BASE + tool.index, currentTool.length);
 }
 
 double radiusof_tool(uint8_t index) {
