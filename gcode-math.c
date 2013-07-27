@@ -124,3 +124,7 @@ bool do_WCS_cycle_math(TGCodeCoordinateInfo *system, double X, double Y, double 
 
   return true;
 }
+
+double to_metric_math(const TGCodeCoordinateInfo system, const double value) {
+  return (system.units == GCODE_UNITS_INCH ? value * 25.4 : value);
+}

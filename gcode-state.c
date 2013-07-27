@@ -176,7 +176,7 @@ bool update_gcode_state(char *line) {
 
   if((arg = have_gcode_word('G', 2, GCODE_FEED_INVTIME, GCODE_FEED_PERMINUTE))) currentGCodeState.feedMode = arg;
   // We have integer precision for F, but people would write it as a real.
-  if(have_gcode_word('F', 0)) currentGCodeState.F = override_feed_machine(get_gcode_word_real('F'));
+  if(have_gcode_word('F', 0)) currentGCodeState.F = to_metric_math(currentGCodeState.system, override_feed_machine(get_gcode_word_real('F')));
   if(have_gcode_word('S', 0)) set_spindle_speed_machine(override_speed_machine(get_gcode_word_integer('S')));
   if(have_gcode_word('T', 0)) {
     currentGCodeState.T = get_gcode_word_integer('T');
@@ -217,17 +217,17 @@ bool update_gcode_state(char *line) {
     //TODO: investigate whether it's worth merging with M21-M23 to avoid duplicating code
     //TODO: this only works in absolute mode when specifying axis words now
     currentGCodeState.system.mirror.mode = arg;
-    currentGCodeState.system.mirror.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
-    currentGCodeState.system.mirror.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);
-    currentGCodeState.system.mirror.Z = get_gcode_word_real_default('Z', currentGCodeState.system.Z);
+    currentGCodeState.system.mirror.X = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('X', currentGCodeState.system.X));
+    currentGCodeState.system.mirror.Y = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('Y', currentGCodeState.system.Y));
+    currentGCodeState.system.mirror.Z = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('Z', currentGCodeState.system.Z));
     currentGCodeState.axisWordsConsumed = true;
   }
   if((arg = have_gcode_word('G', 2, GCODE_ROTATION_ON, GCODE_ROTATION_OFF))) {
     //TODO: this only works in absolute mode when specifying axis words now
     currentGCodeState.system.rotation.mode = arg;
-    currentGCodeState.system.rotation.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
-    currentGCodeState.system.rotation.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);
-    currentGCodeState.system.rotation.Z = get_gcode_word_real_default('Z', currentGCodeState.system.Z);
+    currentGCodeState.system.rotation.X = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('X', currentGCodeState.system.X));
+    currentGCodeState.system.rotation.Y = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('Y', currentGCodeState.system.Y));
+    currentGCodeState.system.rotation.Z = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('Z', currentGCodeState.system.Z));
     currentGCodeState.system.rotation.R = get_gcode_word_integer('R');
     currentGCodeState.axisWordsConsumed = true;
   }
@@ -249,9 +249,9 @@ bool update_gcode_state(char *line) {
   if((arg = have_gcode_word('G', 2, GCODE_SCALING_ON, GCODE_SCALING_OFF))) {
     //TODO: this only works in absolute mode when specifying axis words now
     currentGCodeState.system.scaling.mode = arg;
-    currentGCodeState.system.scaling.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
-    currentGCodeState.system.scaling.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);
-    currentGCodeState.system.scaling.Z = get_gcode_word_real_default('Z', currentGCodeState.system.Z);
+    currentGCodeState.system.scaling.X = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('X', currentGCodeState.system.X));
+    currentGCodeState.system.scaling.Y = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('Y', currentGCodeState.system.Y));
+    currentGCodeState.system.scaling.Z = to_metric_math(currentGCodeState.system, get_gcode_word_real_default('Z', currentGCodeState.system.Z));
     currentGCodeState.axisWordsConsumed = true;
     currentGCodeState.system.scaling.I = get_gcode_word_real('P');
     if(isnan(currentGCodeState.system.scaling.I)) { /* No P word */
@@ -277,24 +277,25 @@ bool update_gcode_state(char *line) {
   }
   if(have_gcode_word('G', 1, 92)) {
     //TODO: implement proper WCS_math for these too (same thing, only store in system->offset.X instead of system->X
-    currentGCodeState.system.offset.X = get_gcode_word_real('X');
-    currentGCodeState.system.offset.Y = get_gcode_word_real('Y');
-    currentGCodeState.system.offset.Z = get_gcode_word_real('Z');
+    currentGCodeState.system.offset.X = to_metric_math(currentGCodeState.system, get_gcode_word_real('X'));
+    currentGCodeState.system.offset.Y = to_metric_math(currentGCodeState.system, get_gcode_word_real('Y'));
+    currentGCodeState.system.offset.Z = to_metric_math(currentGCodeState.system, get_gcode_word_real('Z'));
     currentGCodeState.axisWordsConsumed = true;
   }
   if((arg = have_gcode_word('G', 6, GCODE_MOVE_RAPID, GCODE_MOVE_FEED, GCODE_MODE_ARC_CW, GCODE_MODE_ARC_CCW, GCODE_MODE_CIRCLE_CW, GCODE_MODE_CIRCLE_CCW))) {
     currentGCodeState.motionMode = _map_move_to_motion(arg, &currentGCodeState.ccw);
     if(!(arg == GCODE_MOVE_RAPID + 100 || arg == GCODE_MOVE_FEED)) { /* It's an arc or circle, fetch I,J,K,R now for later */
-      currentGCodeState.I = get_gcode_word_real('I');
-      currentGCodeState.J = get_gcode_word_real('J');
-      currentGCodeState.K = get_gcode_word_real('K');
-      currentGCodeState.R = get_gcode_word_real('R');
+      currentGCodeState.I = to_metric_math(currentGCodeState.system, get_gcode_word_real('I'));
+      currentGCodeState.J = to_metric_math(currentGCodeState.system, get_gcode_word_real('J'));
+      currentGCodeState.K = to_metric_math(currentGCodeState.system, get_gcode_word_real('K'));
+      currentGCodeState.R = to_metric_math(currentGCodeState.system, get_gcode_word_real('R'));
     }
   }
   if((arg = have_gcode_word('G', 13, GCODE_CYCLE_PROBE_IN, GCODE_CYCLE_PROBE_OUT, GCODE_CYCLE_DRILL_PP, GCODE_CYCLE_TAP_LH, GCODE_CYCLE_DRILL_ND,  GCODE_CYCLE_DRILL_WD, GCODE_CYCLE_DRILL_PF, GCODE_CYCLE_TAP_RH, GCODE_CYCLE_BORING_ND_NS, GCODE_CYCLE_BORING_WD_WS, GCODE_CYCLE_BORING_BACK, GCODE_CYCLE_BORING_MANUAL, GCODE_CYCLE_BORING_WD_NS))) {
     currentGCodeState.motionMode = CYCLE;
     currentGCodeState.cycle = arg;
     if(!(arg == GCODE_CYCLE_PROBE_IN || arg == GCODE_CYCLE_PROBE_OUT)) { /* It's a canned cycle, fetch I,J,L,P,Q,R now for later */
+      //TODO: check for inch-ness among params and fix accordingly
       currentGCodeState.I = get_gcode_word_real('I');
       currentGCodeState.J = get_gcode_word_real('J');
       currentGCodeState.L = get_gcode_word_integer('L');
@@ -322,19 +323,19 @@ bool update_gcode_state(char *line) {
             uint16_t wcs = (get_gcode_word_integer('P') - 1) * GCODE_PARM_WCS_SIZE;
             double offset;
 
-            offset = get_gcode_word_real('X');
+            offset = to_metric_math(currentGCodeState.system, get_gcode_word_real('X'));
             update_parameter(GCODE_PARM_FIRST_WCS + wcs + 0, (isnan(offset) ? currentGCodeState.system.X : offset));
-            offset = get_gcode_word_real('Y');
+            offset = to_metric_math(currentGCodeState.system, get_gcode_word_real('Y'));
             update_parameter(GCODE_PARM_FIRST_WCS + wcs + 1, (isnan(offset) ? currentGCodeState.system.Y : offset));
-            offset = get_gcode_word_real('Z');
+            offset = to_metric_math(currentGCodeState.system, get_gcode_word_real('Z'));
             update_parameter(GCODE_PARM_FIRST_WCS + wcs + 2, (isnan(offset) ? currentGCodeState.system.Z : offset));
             commit_parameters();
           } break;
           case 3: {
             uint8_t tool = get_gcode_word_integer('P');
 
-            if(have_gcode_word('H', 0)) update_parameter(GCODE_TOOL_LEN_BASE + tool, get_gcode_word_real('H'));
-            if(have_gcode_word('D', 0)) update_parameter(GCODE_TOOL_DIAM_BASE + tool, get_gcode_word_real('D'));
+            if(have_gcode_word('H', 0)) update_parameter(GCODE_TOOL_LEN_BASE + tool, to_metric_math(currentGCodeState.system, get_gcode_word_real('H')));
+            if(have_gcode_word('D', 0)) update_parameter(GCODE_TOOL_DIAM_BASE + tool, to_metric_math(currentGCodeState.system, get_gcode_word_real('D')));
             commit_parameters();
           } break;
           default:
@@ -376,12 +377,12 @@ bool update_gcode_state(char *line) {
       break;
     case LINEAR:
       /* F is interpreted in whatever the current machine's units are */
-      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.feedMode, (currentGCodeState.system.units == GCODE_UNITS_METRIC ? currentGCodeState.F : currentGCodeState.F * 25.4));
+      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.feedMode, currentGCodeState.F);
       break;
     case ARC:
       //TODO: implement full-circle as a repeat of arcs, add new move_machine_ call for that
       /* F is interpreted in whatever the current machine's units are */
-      move_machine_arc(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.I, currentGCodeState.J, currentGCodeState.K, currentGCodeState.R, currentGCodeState.ccw, currentGCodeState.system.plane, currentGCodeState.feedMode, (currentGCodeState.system.units == GCODE_UNITS_METRIC ? currentGCodeState.F : currentGCodeState.F * 25.4));
+      move_machine_arc(currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.I, currentGCodeState.J, currentGCodeState.K, currentGCodeState.R, currentGCodeState.ccw, currentGCodeState.system.plane, currentGCodeState.feedMode, currentGCodeState.F);
       break;
     case CYCLE:
       move_machine_cycle(currentGCodeState.cycle, currentGCodeState.system.X, currentGCodeState.system.Y, currentGCodeState.system.Z, currentGCodeState.retractMode, currentGCodeState.L, currentGCodeState.P, currentGCodeState.Q, currentGCodeState.R, currentGCodeState.feedMode, currentGCodeState.F);
