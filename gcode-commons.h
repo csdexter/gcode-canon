@@ -45,5 +45,8 @@
 /* How many nested subprogram calls we support */
 #define GCODE_SUBPROGRAM_COUNT 16
 
+/* Handy for trigonometry */
+#define GCODE_DEG2RAD 0.0174532925
+
 
 #endif /* GCODE_COMMONS_H_ */
