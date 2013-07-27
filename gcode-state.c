@@ -66,7 +66,14 @@ static TGCodeState currentGCodeState = {
       0.0,
       0.0
     },
+    /* X, Y, Z */
     0.0,
+    0.0,
+    0.0,
+    /* pR, pT */
+    0.0,
+    0.0,
+    /* gX, gY, gZ */
     0.0,
     0.0,
     0.0
@@ -208,6 +215,7 @@ bool update_gcode_state(char *line) {
   if((arg = have_gcode_word('M', 3, GCODE_MIRROR_X, GCODE_MIRROR_Y, GCODE_MIRROR_OFF_M))) enable_mirror_machine(arg);
   if((arg = have_gcode_word('G', 2, GCODE_MIRROR_ON, GCODE_MIRROR_OFF_S))) {
     //TODO: investigate whether it's worth merging with M21-M23 to avoid duplicating code
+    //TODO: this only works in absolute mode when specifying axis words now
     currentGCodeState.system.mirror.mode = arg;
     currentGCodeState.system.mirror.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
     currentGCodeState.system.mirror.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);
@@ -215,6 +223,7 @@ bool update_gcode_state(char *line) {
     currentGCodeState.axisWordsConsumed = true;
   }
   if((arg = have_gcode_word('G', 2, GCODE_ROTATION_ON, GCODE_ROTATION_OFF))) {
+    //TODO: this only works in absolute mode when specifying axis words now
     currentGCodeState.system.rotation.mode = arg;
     currentGCodeState.system.rotation.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
     currentGCodeState.system.rotation.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);
@@ -238,6 +247,7 @@ bool update_gcode_state(char *line) {
     currentGCodeState.system.cartesian = arg;
   }
   if((arg = have_gcode_word('G', 2, GCODE_SCALING_ON, GCODE_SCALING_OFF))) {
+    //TODO: this only works in absolute mode when specifying axis words now
     currentGCodeState.system.scaling.mode = arg;
     currentGCodeState.system.scaling.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
     currentGCodeState.system.scaling.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);

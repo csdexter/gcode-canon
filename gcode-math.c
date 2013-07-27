@@ -105,9 +105,9 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
 
   //Apply scaling
   if(system->scaling.mode == GCODE_SCALING_ON) {
-    X = (X - system->scaling.X) * system->scaling.I;
-    Y = (Y - system->scaling.Y) * system->scaling.J;
-    Z = (Z - system->scaling.Z) * system->scaling.K;
+    X = system->scaling.X + (X - system->scaling.X) * system->scaling.I;
+    Y = system->scaling.Y + (Y - system->scaling.Y) * system->scaling.J;
+    Z = system->scaling.Z + (Z - system->scaling.Z) * system->scaling.K;
   }
 
   //We're finally done, update the processed coordinates
