@@ -47,6 +47,12 @@
 
 /* Handy for trigonometry */
 #define GCODE_DEG2RAD 0.0174532925
+/* Handy for measurements */
+#define GCODE_INCH2MM 25.4
 
+/* Handy for batch/vector processing */
+#define GCODE_AXIS_X 0
+#define GCODE_AXIS_Y 1
+#define GCODE_AXIS_Z 2
 
 #endif /* GCODE_COMMONS_H_ */

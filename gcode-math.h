@@ -12,6 +12,8 @@
 #include "gcode-state.h"
 
 
+/* Coordinate pre-processing: de-inch, apply WCS and LCS and absolutize */
+double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input, const double offset, const double previous, const uint8_t axis);
 /* Coordinate math workhorse. Transforms X,Y,Z according to all information in
  * system and stores the result in system->X, system->Y, system->Z. Returns
  * false if any [math] error occurs */

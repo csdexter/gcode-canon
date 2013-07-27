@@ -12,32 +12,24 @@
 #include <math.h>
 #include <stdbool.h>
 
+
+double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input, const double offset, const double previous, const uint8_t axis) {
+  if(!isnan(input)) {
+    input = to_metric_math(*system, input);
+    if(system->absolute == GCODE_ABSOLUTE) {
+      return fetch_parameter(GCODE_PARM_FIRST_WCS +
+          (system->current - GCODE_WCS_1) * GCODE_PARM_WCS_SIZE + axis) +
+          offset + input;
+    } else return previous + input;
+  } else return previous;
+}
+
 bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
   //TODO: also provide for G53 (a.k.a. WCS0, a.k.a. MCS)
   //Apply geometric transformations
   if(system->cartesian == GCODE_CARTESIAN) {
-    if(!isnan(X)) {
-      if(system->units == GCODE_UNITS_INCH) X *= 25.4;
-      if(system->absolute == GCODE_ABSOLUTE) {
-        system->gX = X;
-        X = fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) * GCODE_PARM_WCS_SIZE + 0) +
-            system->offset.X + X;
-      } else {
-        X += system->X;
-        system->gX += X;
-      }
-    } else X = system->gX;
-    if(!isnan(Y)) {
-      if(system->units == GCODE_UNITS_INCH) Y *= 25.4;
-      if(system->absolute == GCODE_ABSOLUTE) {
-        system->gY = Y;
-        Y = fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) * GCODE_PARM_WCS_SIZE + 1) +
-            system->offset.Y + Y;
-      } else {
-        Y += system->Y;
-        system->gY += Y;
-      }
-    } else Y = system->gY;
+    system->gX = X = do_G_coordinate_math(system, X, system->offset.X, system->gX, GCODE_AXIS_X);
+    system->gY = Y = do_G_coordinate_math(system, Y, system->offset.Y, system->gY, GCODE_AXIS_Y);
   } else {
     double pX, pY = Y;
 
@@ -60,17 +52,8 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
     //Length compensation is measurement system -agnostic, i.e. "3.0" will be
     //in or mm above in both what the user gave us for Z *and* the compensation
     //value currently in effect.
-    if(system->units == GCODE_UNITS_INCH) Z *= 25.4;
-    //Then do the geometric transformations
-    if(system->absolute == GCODE_ABSOLUTE) {
-      system->gZ = Z;
-      Z = fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) * GCODE_PARM_WCS_SIZE + 2) +
-          system->offset.Z + Z;
-    } else {
-      Z += system->Z;
-      system->gZ += Z;
-    }
-  } else Z = system->gZ;
+  }
+  system->gZ = Z = do_G_coordinate_math(system, Z, system->offset.Z, system->gZ, GCODE_AXIS_Z);
 
   //Apply coordinate system rotation
   if(system->rotation.mode == GCODE_ROTATION_ON) {
@@ -126,5 +109,5 @@ bool do_WCS_cycle_math(TGCodeCoordinateInfo *system, double X, double Y, double 
 }
 
 double to_metric_math(const TGCodeCoordinateInfo system, const double value) {
-  return (system.units == GCODE_UNITS_INCH ? value * 25.4 : value);
+  return (system.units == GCODE_UNITS_INCH ? value * GCODE_INCH2MM : value);
 }

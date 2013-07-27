@@ -15,25 +15,25 @@
 #include "gcode-parameters.h"
 
 
-static double machineX, machineY, machineZ, noMirrorX, noMirrorY;
+static double machineX, machineY, machineZ, noMirrorX, noMirrorY, beforeHomeX, beforeHomeY, beforeHomeZ;
 static uint32_t spindleSpeed;
 static TGCodeMachineState currentMachineState;
 static bool stillRunning, servoPower;
 
 bool init_machine(void *data) {
-  machineX = machineY = machineZ = noMirrorX = noMirrorY = 0.0;
+  machineX = machineY = machineZ = noMirrorX = noMirrorY = beforeHomeX = beforeHomeY = beforeHomeZ = 0.0;
   currentMachineState.flags = 0x00;
   set_spindle_speed_machine(GCODE_MACHINE_LOWEST_RPM);
   enable_override_machine(GCODE_OVERRIDE_ON);
   stillRunning = true;
   enable_power_machine(GCODE_SERVO_ON);
   /* By default our home and zero positions are at (0, 0, 0) */
-  set_parameter(GCODE_PARM_FIRST_HOME + 0, machineX);
-  set_parameter(GCODE_PARM_FIRST_HOME + 1, machineY);
-  set_parameter(GCODE_PARM_FIRST_HOME + 2, machineZ);
-  set_parameter(GCODE_PARM_FIRST_ZERO + 0, machineX);
-  set_parameter(GCODE_PARM_FIRST_ZERO + 1, machineY);
-  set_parameter(GCODE_PARM_FIRST_ZERO + 2, machineZ);
+  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X, machineX);
+  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y, machineY);
+  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z, machineZ);
+  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_X, machineX);
+  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Y, machineY);
+  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Z, machineZ);
 
   GCODE_DEBUG("Machine is up");
 
@@ -149,17 +149,39 @@ bool move_machine_cycle(TGCodeCycleMode mode, double X, double Y, double Z, TGCo
 
 bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
   if(!servoPower) return false;
-  move_machine_line(X, Y, Z, GCODE_FEED_PERMINUTE, GCODE_MOVE_FEED);
 
   switch(mode) {
     case GCODE_CYCLE_HOME:
       GCODE_DEBUG("Home and recalibrate cycle for axes: %s%s%s", (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y", (Z == machineZ) ? "" : "Z");
+      beforeHomeX = machineX;
+      beforeHomeY = machineY;
+      beforeHomeZ = machineZ;
       break;
     case GCODE_CYCLE_RETURN:
       GCODE_DEBUG("Return from reference point cycle for axes: %s%s%s", (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y", (Z == machineZ) ? "" : "Z");
       break;
     case GCODE_CYCLE_ZERO:
       GCODE_DEBUG("Go to zero cycle for axes: %s%s%s", (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y", (Z == machineZ) ? "" : "Z");
+      beforeHomeX = machineX;
+      beforeHomeY = machineY;
+      beforeHomeZ = machineZ;
+      break;
+    default:
+      return false;
+  }
+
+  move_machine_line(X, Y, Z, GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
+
+  switch(mode) {
+    case GCODE_CYCLE_HOME:
+      //TODO: obey home search speed
+      move_machine_line(fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X), fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y), fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z), GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
+      break;
+    case GCODE_CYCLE_RETURN:
+      move_machine_line(beforeHomeX, beforeHomeY, beforeHomeZ, GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
+      break;
+    case GCODE_CYCLE_ZERO:
+      move_machine_line(fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_X), fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Y), fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Z), GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
       break;
     default:
       return false;
