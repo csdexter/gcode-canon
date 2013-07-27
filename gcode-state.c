@@ -242,7 +242,6 @@ bool update_gcode_state(char *line) {
     currentGCodeState.system.scaling.X = get_gcode_word_real_default('X', currentGCodeState.system.X);
     currentGCodeState.system.scaling.Y = get_gcode_word_real_default('Y', currentGCodeState.system.Y);
     currentGCodeState.system.scaling.Z = get_gcode_word_real_default('Z', currentGCodeState.system.Z);
-    /* G51 is supposed to consume axis words, even if they were not specified so mark them as used */
     currentGCodeState.axisWordsConsumed = true;
     currentGCodeState.system.scaling.I = get_gcode_word_real('P');
     if(isnan(currentGCodeState.system.scaling.I)) { /* No P word */

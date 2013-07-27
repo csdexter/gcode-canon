@@ -18,18 +18,26 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
   if(system->cartesian == GCODE_CARTESIAN) {
     if(!isnan(X)) {
       if(system->units == GCODE_UNITS_INCH) X *= 25.4;
-      if(system->absolute == GCODE_ABSOLUTE)
+      if(system->absolute == GCODE_ABSOLUTE) {
+        system->gX = X;
         X = fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) * GCODE_PARM_WCS_SIZE + 0) +
             system->offset.X + X;
-      else X += system->X;
-    } else X = system->X;
+      } else {
+        X += system->X;
+        system->gX += X;
+      }
+    } else X = system->gX;
     if(!isnan(Y)) {
       if(system->units == GCODE_UNITS_INCH) Y *= 25.4;
-      if(system->absolute == GCODE_ABSOLUTE)
+      if(system->absolute == GCODE_ABSOLUTE) {
+        system->gY = Y;
         Y = fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) * GCODE_PARM_WCS_SIZE + 1) +
             system->offset.Y + Y;
-      else Y += system->Y;
-    } else Y = system->Y;
+      } else {
+        Y += system->Y;
+        system->gY += Y;
+      }
+    } else Y = system->gY;
   } else {
     double pX, pY = Y;
 
@@ -39,6 +47,8 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
     Y = system->Y + (isnan(pX) ? system->pR : pX) * sin((isnan(pY) ? system->pT : pY) * 0.0174532925);
     if(!isnan(pX)) system->pR = pX;
     if(!isnan(pY)) system->pT = pY;
+    system->gX = X;
+    system->gY = Y;
   }
   if(!isnan(Z)) {
     //Apply length compensation first, by definition only along the spindle axis
@@ -52,39 +62,42 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
     //value currently in effect.
     if(system->units == GCODE_UNITS_INCH) Z *= 25.4;
     //Then do the geometric transformations
-    if(system->absolute == GCODE_ABSOLUTE)
+    if(system->absolute == GCODE_ABSOLUTE) {
+      system->gZ = Z;
       Z = fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) * GCODE_PARM_WCS_SIZE + 2) +
           system->offset.Z + Z;
-    else Z += system->Z;
-  } else Z = system->Z;
+    } else {
+      Z += system->Z;
+      system->gZ += Z;
+    }
+  } else Z = system->gZ;
 
   //Apply coordinate system rotation
   if(system->rotation.mode == GCODE_ROTATION_ON) {
-    double oldX = X, oldY = Y, oldZ = Z;
-
     switch(system->plane) {
+      /* reusing g[XYZ] instead of [XYZ] so that no temporary variables are needed */
       case GCODE_PLANE_XY:
-        X = cos(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) -
-            sin(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) +
+        X = cos(system->rotation.R * 0.0174532925) * (system->gX - system->rotation.X) -
+            sin(system->rotation.R * 0.0174532925) * (system->gY - system->rotation.Y) +
             system->rotation.X;
-        Y = sin(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) +
-            cos(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) +
+        Y = sin(system->rotation.R * 0.0174532925) * (system->gX - system->rotation.X) +
+            cos(system->rotation.R * 0.0174532925) * (system->gY - system->rotation.Y) +
             system->rotation.Y;
         break;
       case GCODE_PLANE_YZ:
-        Y = cos(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) -
-            sin(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) +
+        Y = cos(system->rotation.R * 0.0174532925) * (system->gY - system->rotation.Y) -
+            sin(system->rotation.R * 0.0174532925) * (system->gZ - system->rotation.Z) +
             system->rotation.Y;
-        Z = sin(system->rotation.R * 0.0174532925) * (oldY - system->rotation.Y) +
-            cos(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) +
+        Z = sin(system->rotation.R * 0.0174532925) * (system->gY - system->rotation.Y) +
+            cos(system->rotation.R * 0.0174532925) * (system->gZ - system->rotation.Z) +
             system->rotation.Z;
         break;
       case GCODE_PLANE_ZX:
-        Z = cos(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) -
-            sin(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) +
+        Z = cos(system->rotation.R * 0.0174532925) * (system->gZ - system->rotation.Z) -
+            sin(system->rotation.R * 0.0174532925) * (system->gX - system->rotation.X) +
             system->rotation.Z;
-        X = sin(system->rotation.R * 0.0174532925) * (oldZ - system->rotation.Z) +
-            cos(system->rotation.R * 0.0174532925) * (oldX - system->rotation.X) +
+        X = sin(system->rotation.R * 0.0174532925) * (system->gZ - system->rotation.Z) +
+            cos(system->rotation.R * 0.0174532925) * (system->gX - system->rotation.X) +
             system->rotation.X;
         break;
     }
@@ -106,8 +119,8 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
 }
 
 bool do_WCS_cycle_math(TGCodeCoordinateInfo *system, double X, double Y, double Z, double R) {
+  //TODO: implement cycle math or fold over to move math
   if(system->absolute == GCODE_ABSOLUTE) do_WCS_move_math(system, X, Y, Z);
-  if(!isnan(R)) system->R = R; /* Dummy implementation */
 
   return true;
 }

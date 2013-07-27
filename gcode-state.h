@@ -231,8 +231,13 @@ typedef struct {
   TGCodePolarMode cartesian;
   TGCodeScalingSpec scaling;
   TGCodeOffsetSpec offset;
-  double X, Y, Z, R;
+  /* This are what we feed the machine. Always in mm, always Cartesian, always absolute */
+  double X, Y, Z;
+  /* These are the current/old Radius and Theta while we're in polar mode */
   double pR, pT;
+  /* These are GCode's idea of the current coordinates, used mostly when transformations are active.
+   * Also always in mm, always Cartesian, always absolute */
+  double gX, gY, gZ;
 } TGCodeCoordinateInfo;
 
 typedef struct {
