@@ -1,8 +1,11 @@
 /*
- * gcode-parameters.c
- *
- *  Created on: Aug 12, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-parameters.c
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-08-12)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : G-Code Parameter Address Handling Code
+ ============================================================================
  */
 
 #include <stdio.h>
@@ -13,16 +16,17 @@
 #include "gcode-parameters.h"
 #include "gcode-debugcon.h"
 
-static FILE *parameterStore;
-static double parameters[GCODE_PARAMETER_COUNT] = {0.0};
 
 typedef struct {
   uint16_t index;
   double value;
 } TGCodePendingParameterUpdate;
 
+static FILE *parameterStore;
+static double parameters[GCODE_PARAMETER_COUNT] = {0.0};
 static TGCodePendingParameterUpdate parameterUpdates[GCODE_PARAMETER_UPDATES];
 static uint8_t parameterUpdateCount;
+
 
 bool init_parameters(void *data) {
   char *line = (char *)malloc(0xFF), *key;
@@ -30,7 +34,7 @@ bool init_parameters(void *data) {
 
   parameterStore = (FILE *)data;
 
-  /* binary 0x00 may not result in float +0.0E+1, so do it by hand */
+  /* binary 0x00 may not result in float +0.0E+0, so do it by hand */
   for(i = 0; i < GCODE_PARAMETER_COUNT; i++) parameters[i] = 0.0;
   for(i = 0; i < GCODE_PARAMETER_UPDATES; i++) {
     parameterUpdates[i].index = 0;
@@ -45,7 +49,8 @@ bool init_parameters(void *data) {
     i++;
   }
   free(line);
-  GCODE_DEBUG("%d parameters restored from non-volatile storage, %d available", i, GCODE_PARAMETER_COUNT);
+  GCODE_DEBUG("%d parameters restored from non-volatile storage, %d available",
+              i, GCODE_PARAMETER_COUNT);
 
   /* Now handle the special cases */
   parameters[0] = +0.0E+0; /* #0 is always zero */
@@ -60,7 +65,8 @@ double fetch_parameter(uint16_t index) {
 }
 
 bool update_parameter(uint16_t index, double newValue) {
-  if(!index || index > GCODE_PARAMETER_COUNT) return false; // #0 is readonly and there's only 5400 of them
+  // #0 is readonly and there's only 5400 of them
+  if(!index || index > GCODE_PARAMETER_COUNT) return false;
 
   if(parameterUpdateCount < GCODE_PARAMETER_UPDATES) {
     parameterUpdateCount++;
@@ -72,7 +78,8 @@ bool update_parameter(uint16_t index, double newValue) {
 }
 
 bool set_parameter(uint16_t index, double newValue) {
-  if(!index || index > GCODE_PARAMETER_COUNT) return false; // #0 is readonly and there's only 5400 of them
+  // #0 is readonly and there's only 5400 of them
+  if(!index || index > GCODE_PARAMETER_COUNT) return false;
 
   parameters[index] = newValue;
 
@@ -84,7 +91,8 @@ bool commit_parameters(void){
 
   for(i = 0; i < parameterUpdateCount; i++) {
     parameters[parameterUpdates[i].index] = parameterUpdates[i].value;
-    GCODE_DEBUG("#%d = %4.2f", parameterUpdates[i].index, parameterUpdates[i].value);
+    GCODE_DEBUG("#%d = %4.2f", parameterUpdates[i].index,
+                parameterUpdates[i].value);
   }
   parameterUpdateCount = 0;
 

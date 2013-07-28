@@ -1,8 +1,11 @@
 /*
- * gcode-math.c
- *
- *  Created on: Aug 16, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-math.c
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-08-16)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : Coordinate System Transformations Code
+ ============================================================================
  */
 
 #include "gcode-math.h"
@@ -13,7 +16,8 @@
 #include <stdbool.h>
 
 
-double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input, const double offset, const double previous, const uint8_t axis) {
+double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input,
+    const double offset, const double previous, const uint8_t axis) {
   if(!isnan(input)) {
     input = to_metric_math(*system, input);
     if(system->absolute == GCODE_ABSOLUTE) {
@@ -24,19 +28,24 @@ double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input, co
   } else return previous;
 }
 
-bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
+bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y,
+    double Z) {
   //TODO: also provide for G53 (a.k.a. WCS0, a.k.a. MCS)
   //Apply geometric transformations
   if(system->cartesian == GCODE_CARTESIAN) {
-    system->gX = X = do_G_coordinate_math(system, X, system->offset.X, system->gX, GCODE_AXIS_X);
-    system->gY = Y = do_G_coordinate_math(system, Y, system->offset.Y, system->gY, GCODE_AXIS_Y);
+    system->gX = X = do_G_coordinate_math(system, X, system->offset.X,
+                                          system->gX, GCODE_AXIS_X);
+    system->gY = Y = do_G_coordinate_math(system, Y, system->offset.Y,
+                                          system->gY, GCODE_AXIS_Y);
   } else {
     double pX, pY = Y;
 
     if(!isnan(X) && system->units == GCODE_UNITS_INCH) X *= 25.4;
     pX = X;
-    X = system->X + (isnan(pX) ? system->pR : pX) * cos((isnan(pY) ? system->pT : pY) * GCODE_DEG2RAD);
-    Y = system->Y + (isnan(pX) ? system->pR : pX) * sin((isnan(pY) ? system->pT : pY) * GCODE_DEG2RAD);
+    X = system->X + (isnan(pX) ? system->pR : pX) *
+        cos((isnan(pY) ? system->pT : pY) * GCODE_DEG2RAD);
+    Y = system->Y + (isnan(pX) ? system->pR : pX) *
+        sin((isnan(pY) ? system->pT : pY) * GCODE_DEG2RAD);
     if(!isnan(pX)) system->pR = pX;
     if(!isnan(pY)) system->pT = pY;
     system->gX = X;
@@ -53,35 +62,42 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
     //in or mm above in both what the user gave us for Z *and* the compensation
     //value currently in effect.
   }
-  system->gZ = Z = do_G_coordinate_math(system, Z, system->offset.Z, system->gZ, GCODE_AXIS_Z);
+  system->gZ = Z = do_G_coordinate_math(system, Z, system->offset.Z,
+                                        system->gZ, GCODE_AXIS_Z);
 
   //Apply coordinate system rotation
   if(system->rotation.mode == GCODE_ROTATION_ON) {
     switch(system->plane) {
       /* reusing g[XYZ] instead of [XYZ] so that no temporary variables are needed */
       case GCODE_PLANE_XY:
-        X = cos(system->rotation.R * GCODE_DEG2RAD) * (system->gX - system->rotation.X) -
-            sin(system->rotation.R * GCODE_DEG2RAD) * (system->gY - system->rotation.Y) +
-            system->rotation.X;
-        Y = sin(system->rotation.R * GCODE_DEG2RAD) * (system->gX - system->rotation.X) +
-            cos(system->rotation.R * GCODE_DEG2RAD) * (system->gY - system->rotation.Y) +
-            system->rotation.Y;
+        X = cos(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gX - system->rotation.X) -
+            sin(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gY - system->rotation.Y) + system->rotation.X;
+        Y = sin(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gX - system->rotation.X) +
+            cos(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gY - system->rotation.Y) + system->rotation.Y;
         break;
       case GCODE_PLANE_YZ:
-        Y = cos(system->rotation.R * GCODE_DEG2RAD) * (system->gY - system->rotation.Y) -
-            sin(system->rotation.R * GCODE_DEG2RAD) * (system->gZ - system->rotation.Z) +
-            system->rotation.Y;
-        Z = sin(system->rotation.R * GCODE_DEG2RAD) * (system->gY - system->rotation.Y) +
-            cos(system->rotation.R * GCODE_DEG2RAD) * (system->gZ - system->rotation.Z) +
-            system->rotation.Z;
+        Y = cos(system->rotation.R * GCODE_DEG2RAD) *
+        (system->gY - system->rotation.Y) -
+            sin(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gZ - system->rotation.Z) + system->rotation.Y;
+        Z = sin(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gY - system->rotation.Y) +
+            cos(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gZ - system->rotation.Z) + system->rotation.Z;
         break;
       case GCODE_PLANE_ZX:
-        Z = cos(system->rotation.R * GCODE_DEG2RAD) * (system->gZ - system->rotation.Z) -
-            sin(system->rotation.R * GCODE_DEG2RAD) * (system->gX - system->rotation.X) +
-            system->rotation.Z;
-        X = sin(system->rotation.R * GCODE_DEG2RAD) * (system->gZ - system->rotation.Z) +
-            cos(system->rotation.R * GCODE_DEG2RAD) * (system->gX - system->rotation.X) +
-            system->rotation.X;
+        Z = cos(system->rotation.R * GCODE_DEG2RAD) *
+        (system->gZ - system->rotation.Z) -
+            sin(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gX - system->rotation.X) + system->rotation.Z;
+        X = sin(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gZ - system->rotation.Z) +
+            cos(system->rotation.R * GCODE_DEG2RAD) *
+            (system->gX - system->rotation.X) + system->rotation.X;
         break;
     }
   }
@@ -101,7 +117,8 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z
   return true;
 }
 
-bool do_WCS_cycle_math(TGCodeCoordinateInfo *system, double X, double Y, double Z, double R) {
+bool do_WCS_cycle_math(TGCodeCoordinateInfo *system, double X, double Y,
+    double Z, double R) {
   //TODO: implement cycle math or fold over to move math
   if(system->absolute == GCODE_ABSOLUTE) do_WCS_move_math(system, X, Y, Z);
 

@@ -1,8 +1,11 @@
 /*
- * gcode-input.c
- *
- *  Created on: Aug 11, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-input.c
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-08-11)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : G-Code Input API and Implementation Code
+ ============================================================================
  */
 
 #include <stdbool.h>
@@ -30,7 +33,9 @@ bool init_input(void *data) {
   memset(&programs, 0x00, sizeof(programs));
   programCount = 0;
 
-  GCODE_DEBUG("Input stream up, %d program table entries available", GCODE_PROGRAM_CAPACITY);
+  GCODE_DEBUG("Input stream up, %d program table entries available",
+              GCODE_PROGRAM_CAPACITY);
+  /* Protect against numbering system strangeness on other locales */
   setlocale(LC_ALL, "C");
   display_machine_message("STA: Scanning input for programs (O words)");
   while(fetch_line_input(NULL));
@@ -96,7 +101,8 @@ bool fetch_line_input(char *line) {
       else continue; /* EOL without data: strip empty line */
     }
 
-    if(ignore || c == ' ' || c == '\t') continue; /* Strip whitespace and deleted blocks */
+    /* Strip whitespace and deleted blocks */
+    if(ignore || c == ' ' || c == '\t') continue;
 
     if(c == '/' && !i && block_delete_machine()) { /* Strip deleted blocks */
       ignore = true;
@@ -125,7 +131,8 @@ bool fetch_line_input(char *line) {
       if(i) display_machine_message("PER: N or O word not at start of block!");
 
       j = 0;
-      d = fetch_char_input(); /* read the number, which should be a literal integer */
+      /* read the number, which should be a literal integer */
+      d = fetch_char_input();
       while(isdigit(d)) {
         commsg[j++] = d;
         d = fetch_char_input();
@@ -135,12 +142,14 @@ bool fetch_line_input(char *line) {
 
       if(c == 'O') {/* We ignore N and store a bookmark for O for now */
         if(programCount < GCODE_PROGRAM_CAPACITY) {
-          programs[programCount].program = (uint16_t)atol(commsg); /* Better mess with precision than signedness */
-          programs[programCount].offset = tell_input() + 1; /* The line immediately after the O word */
+          /* Better mess with precision than signedness */
+          programs[programCount].program = (uint16_t)atol(commsg);
+          /* The line immediately after the O word */
+          programs[programCount].offset = tell_input() + 1;
           programCount++;
         } else display_machine_message("PER: Program table overflow!");
       } else {
-        /* TODO: support N */
+        //TODO: support N
       }
 
       continue;

@@ -1,8 +1,11 @@
 /*
- * gcode-machine.c
- *
- *  Created on: Aug 11, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-machine.c
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-08-11)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : G-Code Machine API and Implementation Code
+ ============================================================================
  */
 
 #include <math.h>
@@ -13,15 +16,19 @@
 #include "gcode-machine.h"
 #include "gcode-debugcon.h"
 #include "gcode-parameters.h"
+#include "gcode-tools.h"
 
 
-static double machineX, machineY, machineZ, noMirrorX, noMirrorY, beforeHomeX, beforeHomeY, beforeHomeZ;
+static double machineX, machineY, machineZ, noMirrorX, noMirrorY, beforeHomeX,
+    beforeHomeY, beforeHomeZ;
 static uint32_t spindleSpeed;
 static TGCodeMachineState currentMachineState;
 static bool stillRunning, servoPower;
 
+
 bool init_machine(void *data) {
-  machineX = machineY = machineZ = noMirrorX = noMirrorY = beforeHomeX = beforeHomeY = beforeHomeZ = 0.0;
+  machineX = machineY = machineZ = noMirrorX = noMirrorY = beforeHomeX =
+      beforeHomeY = beforeHomeZ = 0.0;
   currentMachineState.flags = 0x00;
   set_spindle_speed_machine(GCODE_MACHINE_LOWEST_RPM);
   enable_override_machine(GCODE_OVERRIDE_ON);
@@ -40,8 +47,10 @@ bool init_machine(void *data) {
   return true;
 }
 
-bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, uint16_t F) {
-  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ)) return false;
+bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
+    uint16_t F) {
+  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
+    return false;
 
   /* Check for and apply machine mirroring */
   if(currentMachineState.mirrorX) {
@@ -55,16 +64,21 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode, ui
   machineZ = Z;
 
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
-    GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", machineX, machineY, machineZ)
+    GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", machineX,
+                machineY, machineZ)
   else
-    GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min", machineX, machineY, machineZ, F);
+    GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
+                machineX, machineY, machineZ, F);
   GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
 
   return true;
 }
 
-bool move_machine_arc(double X, double Y, double Z, double I, double J, double K, double R, bool ccw, TGCodePlaneMode plane, TGCodeFeedMode feedMode, uint16_t F) {
-  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ)) return false;
+bool move_machine_arc(double X, double Y, double Z, double I, double J,
+    double K, double R, bool ccw, TGCodePlaneMode plane,
+    TGCodeFeedMode feedMode, uint16_t F) {
+  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
+    return false;
 
   bool theLongWay = false;
   /* Use the >180deg arc on user request */
@@ -91,8 +105,10 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
       };
       if(!isnan(R)) {
         double d = hypot(machineX - X, machineY - Y);
-        I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
-        J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? 1 : -1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
+        I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? -1 : 1) *
+            sqrt(R * R - d * d / 4) * (Y - machineY) / d;
+        J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? 1 : -1) *
+            sqrt(R * R - d * d / 4) * (X - machineX) / d;
         K = 0;
       } else R = hypot(I, J);
       break;
@@ -106,8 +122,10 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
       }
       if(!isnan(R)) {
         double d = hypot(machineZ - Z, machineX - X);
-        K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (X - machineX) / d;
-        I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? 1 : -1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
+        K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? -1 : 1) *
+            sqrt(R * R - d * d / 4) * (X - machineX) / d;
+        I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? 1 : -1) *
+            sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
         J = 0;
       } else R = hypot(K, I);
       break;
@@ -121,17 +139,20 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
       }
       if(!isnan(R)) {
         double d = hypot(machineY - Y, machineZ - Z);
-        J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? -1 : 1) * sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
-        K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? 1 : -1) * sqrt(R * R - d * d / 4) * (Y - machineY) / d;
+        J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? -1 : 1) *
+            sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
+        K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? 1 : -1) *
+            sqrt(R * R - d * d / 4) * (Y - machineY) / d;
         I = 0;
       } else R = hypot(J, K);
       break;
   }
 
   GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
-      machineX + I, machineY + J, machineZ + K, R,
-      (plane == GCODE_PLANE_XY ? "XY" : (plane == GCODE_PLANE_ZX ? "ZX" : "YZ")),
-      (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, F);
+              machineX + I, machineY + J, machineZ + K, R,
+              (plane == GCODE_PLANE_XY ? "XY" :
+                  (plane == GCODE_PLANE_ZX ? "ZX" : "YZ")),
+              (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, F);
   machineX = X;
   machineY = Y;
   machineZ = Z;
@@ -140,7 +161,9 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J, double K
   return true;
 }
 
-bool move_machine_cycle(TGCodeCycleMode mode, double X, double Y, double Z, TGCodeRetractMode retract, uint16_t L, double P, double Q, double R, TGCodeFeedMode feedMode, uint16_t F) {
+bool move_machine_cycle(TGCodeCycleMode mode, double X, double Y, double Z,
+    TGCodeRetractMode retract, uint16_t L, double P, double Q, double R,
+    TGCodeFeedMode feedMode, uint16_t F) {
   if(!servoPower) return false;
   GCODE_DEBUG("Canned cycle %d", mode);
 
@@ -152,16 +175,23 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
 
   switch(mode) {
     case GCODE_CYCLE_HOME:
-      GCODE_DEBUG("Home and recalibrate cycle for axes: %s%s%s", (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y", (Z == machineZ) ? "" : "Z");
+      GCODE_DEBUG("Home and recalibrate cycle for axes: %s%s%s",
+                  (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y",
+                  (Z == machineZ) ? "" : "Z");
       beforeHomeX = machineX;
       beforeHomeY = machineY;
       beforeHomeZ = machineZ;
       break;
     case GCODE_CYCLE_RETURN:
-      GCODE_DEBUG("Return from reference point cycle for axes: %s%s%s", (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y", (Z == machineZ) ? "" : "Z");
+      GCODE_DEBUG("Return from reference point cycle for axes: %s%s%s",
+                  (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y",
+                  (Z == machineZ) ? "" : "Z");
       break;
     case GCODE_CYCLE_ZERO:
-      GCODE_DEBUG("Go to zero cycle for axes: %s%s%s", (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y", (Z == machineZ) ? "" : "Z");
+      GCODE_DEBUG("Go to zero cycle for axes: %s%s%s",
+                  (X == machineX) ? "" : "X",
+                  (Y == machineY) ? "" : "Y",
+                  (Z == machineZ) ? "" : "Z");
       beforeHomeX = machineX;
       beforeHomeY = machineY;
       beforeHomeZ = machineZ;
@@ -175,13 +205,21 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
   switch(mode) {
     case GCODE_CYCLE_HOME:
       //TODO: obey per axis home speed
-      move_machine_line(fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X), fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y), fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z), GCODE_FEED_PERMINUTE, fetch_parameter(GCODE_PARM_FEED_HOME_X));
+      move_machine_line(fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X),
+                        fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y),
+                        fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z),
+                        GCODE_FEED_PERMINUTE,
+                        fetch_parameter(GCODE_PARM_FEED_HOME_X));
       break;
     case GCODE_CYCLE_RETURN:
-      move_machine_line(beforeHomeX, beforeHomeY, beforeHomeZ, GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
+      move_machine_line(beforeHomeX, beforeHomeY, beforeHomeZ,
+                        GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
       break;
     case GCODE_CYCLE_ZERO:
-      move_machine_line(fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_X), fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Y), fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Z), GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
+      move_machine_line(fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_X),
+                        fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Y),
+                        fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Z),
+                        GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE);
       break;
     default:
       return false;
@@ -216,11 +254,13 @@ bool start_spindle_machine(TGCodeSpindleMode direction) {
   if(!servoPower) return false;
 
   if((currentMachineState.spindleCW && direction == GCODE_SPINDLE_CW) ||
-    (currentMachineState.spindleCCW && direction == GCODE_SPINDLE_CCW)) return true;
+      (currentMachineState.spindleCCW && direction == GCODE_SPINDLE_CCW))
+    return true;
   if(direction == GCODE_SPINDLE_STOP) {
     currentMachineState.spindleCW = currentMachineState.spindleCCW = false;
     GCODE_DEBUG("Spindle stopped");
-  } else if(!(currentMachineState.spindleCW || currentMachineState.spindleCCW)) {
+  } else if(!(currentMachineState.spindleCW ||
+      currentMachineState.spindleCCW)) {
     if(direction == GCODE_SPINDLE_CW) currentMachineState.spindleCW = true;
     else currentMachineState.spindleCCW = true;
     GCODE_DEBUG("Spindle started %s at %5drpm",
@@ -234,7 +274,8 @@ bool start_spindle_machine(TGCodeSpindleMode direction) {
 bool set_spindle_speed_machine(uint32_t speed) {
   spindleSpeed = speed;
 
-  if(currentMachineState.spindleCW || currentMachineState.spindleCCW) GCODE_DEBUG("Spindle now rotating at %5drpm", spindleSpeed)
+  if(currentMachineState.spindleCW || currentMachineState.spindleCCW)
+    GCODE_DEBUG("Spindle now rotating at %5drpm", spindleSpeed)
   else GCODE_DEBUG("Spindle speed preset at %5drpm", spindleSpeed);
 
   return true;
@@ -243,7 +284,8 @@ bool set_spindle_speed_machine(uint32_t speed) {
 bool orient_spindle_machine(uint16_t orientation) {
   if(!servoPower) return false;
 
-  if(currentMachineState.spindleCW || currentMachineState.spindleCCW) GCODE_DEBUG("Spindle currently running, cannot orient!")
+  if(currentMachineState.spindleCW || currentMachineState.spindleCCW)
+    GCODE_DEBUG("Spindle currently running, cannot orient!")
   else GCODE_DEBUG("Oriented spindle at %3ddeg", orientation);
 
   return true;
@@ -262,12 +304,14 @@ bool optional_stop_machine(void) {
 }
 
 uint16_t override_feed_machine(uint16_t feed) {
-  if(currentMachineState.overridesEnabled) return feed * 0.90; /* Simulate 90% setting */
+  /* Simulate 90% setting */
+  if(currentMachineState.overridesEnabled) return feed * 0.90;
   else return feed;
 }
 
 uint32_t override_speed_machine(uint32_t speed) {
-  if(currentMachineState.overridesEnabled) return speed * 0.90; /* Simulate 90% setting */
+  /* Simulate 90% setting */
+  if(currentMachineState.overridesEnabled) return speed * 0.90;
   else return speed;
 }
 
@@ -318,11 +362,14 @@ bool start_coolant_machine(TGCodeCoolantMode mode) {
 
 bool enable_override_machine(TGCodeOverrideMode mode) {
   currentMachineState.overridesEnabled = (mode == GCODE_OVERRIDE_ON);
-  set_parameter(GCODE_PARM_BITFIELD1,
-      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD1) & ~GCODE_MACHINE_PF_OVERRIDES) |
+  set_parameter(
+      GCODE_PARM_BITFIELD1,
+      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD1) &
+          ~GCODE_MACHINE_PF_OVERRIDES) |
       (currentMachineState.overridesEnabled ? GCODE_MACHINE_PF_OVERRIDES : 0x00));
 
-  GCODE_DEBUG("Feed and speed override switches %s", (currentMachineState.overridesEnabled ? "enabled" : "disabled"));
+  GCODE_DEBUG("Feed and speed override switches %s",
+              (currentMachineState.overridesEnabled ? "enabled" : "disabled"));
 
   return true;
 }
@@ -330,7 +377,8 @@ bool enable_override_machine(TGCodeOverrideMode mode) {
 bool select_probeinput_machine(TGCodeProbeInput input) {
   currentMachineState.probeSource = (input == GCODE_PROBE_TOOL);
 
-  GCODE_DEBUG("Probe signal source set to %s", currentMachineState.probeSource ? "probe tool" : "tool height sensor");
+  GCODE_DEBUG("Probe signal source set to %s",
+              currentMachineState.probeSource ? "probe tool" : "tool height sensor");
 
   return true;
 }
@@ -338,7 +386,8 @@ bool select_probeinput_machine(TGCodeProbeInput input) {
 bool select_probemode_machine(TGCodeProbeMode mode) {
   currentMachineState.probeMode = (mode == GCODE_PROBE_TWOTOUCH);
 
-  GCODE_DEBUG("Probing mode set to %s stroke", currentMachineState.probeMode ? "single" : "double");
+  GCODE_DEBUG("Probing mode set to %s stroke",
+              currentMachineState.probeMode ? "single" : "double");
 
   return true;
 }
@@ -354,23 +403,30 @@ bool enable_mirror_machine(TGCodeMirrorMachine mode) {
   noMirrorX = machineX;
   noMirrorY = machineY;
 
-  set_parameter(GCODE_PARM_BITFIELD2,
-      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD2) & ~(GCODE_MACHINE_PF_MIRROR_X | GCODE_MACHINE_PF_MIRROR_Y)) |
+  set_parameter(
+      GCODE_PARM_BITFIELD2,
+      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD2) &
+          ~(GCODE_MACHINE_PF_MIRROR_X | GCODE_MACHINE_PF_MIRROR_Y)) |
       (currentMachineState.mirrorX ? GCODE_MACHINE_PF_MIRROR_X : 0x00) |
       (currentMachineState.mirrorY ? GCODE_MACHINE_PF_MIRROR_Y : 0x00));
 
-  GCODE_DEBUG("Machine mirroring %s%s%s", (mode == GCODE_MIRROR_OFF_M) ? "disabled" : "enabled for axis(es): ",
-    currentMachineState.mirrorX ? "X" : "", currentMachineState.mirrorY ? "Y" : "");
+  GCODE_DEBUG("Machine mirroring %s%s%s",
+              (mode == GCODE_MIRROR_OFF_M) ? "disabled" : "enabled for axis(es): ",
+              currentMachineState.mirrorX ? "X" : "",
+              currentMachineState.mirrorY ? "Y" : "");
   return true;
 }
 
 bool select_pathmode_machine(TGCodePathControl mode) {
   currentMachineState.exactStopCheck = (mode == GCODE_EXACTSTOPCHECK_ON);
-  set_parameter(GCODE_PARM_BITFIELD1,
-      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD1) & ~GCODE_MACHINE_PF_EXACTSTOP) |
+  set_parameter(
+      GCODE_PARM_BITFIELD1,
+      ((uint8_t)fetch_parameter(GCODE_PARM_BITFIELD1) &
+          ~GCODE_MACHINE_PF_EXACTSTOP) |
       (currentMachineState.exactStopCheck ? GCODE_MACHINE_PF_EXACTSTOP : 0x00));
 
-  GCODE_DEBUG("Exact stop check (path control) %s", currentMachineState.exactStopCheck ? "on" : "off");
+  GCODE_DEBUG("Exact stop check (path control) %s",
+              currentMachineState.exactStopCheck ? "on" : "off");
 
   return true;
 }

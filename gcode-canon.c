@@ -2,9 +2,9 @@
  ============================================================================
  Name        : gcode-canon.c
  Author      : Radu - Eosif Mihailescu
- Version     :
- Copyright   : Copyright (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
- Description : Canonical G-Code Interpreter
+ Version     : 1.0 (2012-08-11)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : Canonical G-Code Interpreter Main Program
  ============================================================================
  */
 
@@ -18,6 +18,7 @@
 #include "gcode-machine.h"
 #include "gcode-state.h"
 #include "gcode-stacks.h"
+
 
 int main(int argc, char *argv[]) {
   FILE *parFile = fopen(GCODE_PARAMETER_STORE, "r");

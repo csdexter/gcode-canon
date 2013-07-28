@@ -1,8 +1,11 @@
 /*
- * gcode-stacks.c
- *
- *  Created on: Sep 23, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-stacks.c
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-09-23)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : G-Code Subroutine Parameter Stack Handling Code
+ ============================================================================
  */
 
 #include <stdbool.h>
@@ -20,10 +23,12 @@ static double *parametersStack[GCODE_MACRO_COUNT];
 static TProgramPointer *programStack[GCODE_SUBPROGRAM_COUNT];
 uint8_t paSP, prSP;
 
+
 bool init_stacks(void *data) {
   paSP = prSP = 0;
 
-  GCODE_DEBUG("Stacks initialized, %d nested calls (%d of which macro-capable) supported", GCODE_SUBPROGRAM_COUNT, GCODE_MACRO_COUNT);
+  GCODE_DEBUG("Stacks initialized, %d nested calls (%d of which macro-capable) supported",
+              GCODE_SUBPROGRAM_COUNT, GCODE_MACRO_COUNT);
 
   return true;
 }

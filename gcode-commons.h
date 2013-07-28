@@ -1,8 +1,11 @@
 /*
- * gcode-commons.h
- *
- *  Created on: Aug 11, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-commons.h
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-08-11)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : Program-wide Generic Use Symbolic Constants
+ ============================================================================
  */
 
 #ifndef GCODE_COMMONS_H_
@@ -55,5 +58,6 @@
 #define GCODE_AXIS_X 0
 #define GCODE_AXIS_Y 1
 #define GCODE_AXIS_Z 2
+
 
 #endif /* GCODE_COMMONS_H_ */

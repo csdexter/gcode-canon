@@ -1,8 +1,11 @@
 /*
- * gcode-tools.c
- *
- *  Created on: Aug 12, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-tools.c
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-08-12)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : G-Code Tool Table Handling Code
+ ============================================================================
  */
 
 #include <stdint.h>
@@ -13,7 +16,9 @@
 #include "gcode-debugcon.h"
 #include "gcode-parameters.h"
 
+
 static TGCodeTool currentTool;
+
 
 bool init_tools(void *data) {
   int i = 0;
@@ -45,13 +50,15 @@ bool update_tool(TGCodeTool tool) {
 
 double radiusof_tool(uint8_t index) {
   if(!index) return 0.0;
-  if(index != currentTool.index) return fetch_parameter(GCODE_TOOL_DIAM_BASE + index) / 2.0;
+  if(index != currentTool.index)
+    return fetch_parameter(GCODE_TOOL_DIAM_BASE + index) / 2.0;
   else return currentTool.diameter / 2.0;
 }
 
 double lengthof_tool(uint8_t index) {
   if(!index) return 0.0;
-  if(index != currentTool.index) return fetch_parameter(GCODE_TOOL_LEN_BASE + index);
+  if(index != currentTool.index)
+    return fetch_parameter(GCODE_TOOL_LEN_BASE + index);
   else return currentTool.length;
 }
 

@@ -1,8 +1,11 @@
 /*
- * gcode-stacks.h
- *
- *  Created on: Sep 23, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-stacks.h
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-09-23)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : G-Code Subroutine Parameter Stack API Header
+ ============================================================================
  */
 
 #ifndef GCODE_STACKS_H_
@@ -21,6 +24,7 @@ typedef struct {
     uint16_t repeatCount;
 } TProgramPointer;
 
+
 bool init_stacks(void *data);
 /* Pushes #1-33 on stack for G65 */
 bool stacks_push_parameters(void);
@@ -31,5 +35,6 @@ bool stacks_pop_parameters(void);
 /* Pops current state of program */
 bool stacks_pop_program(TProgramPointer *state);
 bool done_stacks(void);
+
 
 #endif /* GCODE_STACKS_H_ */

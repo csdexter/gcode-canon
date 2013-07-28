@@ -1,12 +1,16 @@
 /*
- * gcode-tools.h
- *
- *  Created on: Aug 11, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-tools.h
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-08-11)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : G-Code Tool Table Handling Code
+ ============================================================================
  */
 
 #ifndef GCODE_TOOLS_H_
 #define GCODE_TOOLS_H_
+
 
 #include <stdbool.h>
 
@@ -34,16 +38,20 @@ typedef struct {
   /* Other/extended information would go here */
 } TGCodeTool;
 
-/* Initialize the tool engine, takes an opaque pointer to a data store/effector, returns true if all ok */
+
+/* Initialize the tool engine, takes an opaque pointer to a data store/effector,
+ * returns true if all ok */
 bool init_tools(void *data);
 /* Fetch data for tool index out of the store */
 TGCodeTool fetch_tool(uint8_t index);
-/* Update data for tool index into the store, returns false if anything bad happened */
+/* Update data for tool index into the store, returns false if anything bad
+ * happened */
 bool update_tool(TGCodeTool tool);
 /* Returns radius of tool index or zero if zero passed */
 double radiusof_tool(uint8_t index);
 /* Returns length of tool index or zero if zero passed */
 double lengthof_tool(uint8_t index);
 bool done_tools(void);
+
 
 #endif /* GCODE_TOOLS_H_ */

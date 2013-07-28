@@ -1,8 +1,11 @@
 /*
- * gcode-state.h
- *
- *  Created on: Aug 11, 2012
- *      Author: csdexter
+ ============================================================================
+ Name        : gcode-state.h
+ Author      : Radu - Eosif Mihailescu
+ Version     : 1.0 (2012-08-11)
+ Copyright   : (C) 2012 Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
+ Description : G-Code Parser Loop API Header
+ ============================================================================
  */
 
 #ifndef GCODE_STATE_H_
@@ -13,6 +16,7 @@
 #include <stdint.h>
 
 #include "gcode-commons.h"
+
 
 #define GCODE_STATE_PF_ABSOLUTE 0x40
 #define GCODE_STATE_PF_IMPERIAL 0x10
@@ -231,12 +235,14 @@ typedef struct {
   TGCodePolarMode cartesian;
   TGCodeScalingSpec scaling;
   TGCodeOffsetSpec offset;
-  /* This are what we feed the machine. Always in mm, always Cartesian, always absolute */
+  /* This are what we feed the machine. Always in mm, always Cartesian, always
+   * absolute */
   double X, Y, Z;
   /* These are the current/old Radius and Theta while we're in polar mode */
   double pR, pT;
-  /* These are GCode's idea of the current coordinates, used mostly when transformations are active.
-   * Also always in mm, always Cartesian, always absolute */
+  /* These are GCode's idea of the current coordinates, used mostly when
+   * transformations are active. Also always in mm, always Cartesian, always
+   * absolute */
   double gX, gY, gZ;
 } TGCodeCoordinateInfo;
 
@@ -261,6 +267,7 @@ typedef struct {
   char word; /* Last word requested */
   char *at; /* If found, where in line? */
 } TGCodeWordCache;
+
 
 bool init_gcode_state(void *data);
 /* Process one line of G-Code. Note that line has already been sanitized by
