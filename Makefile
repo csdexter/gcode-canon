@@ -18,15 +18,28 @@
 SOURCES:=$(wildcard *.c)
 OBJECTS:=$(patsubst %.c,%.o,$(SOURCES))
 HEADERS:=$(wildcard *.h)
+TESTS:=$(wildcard tests/*.nc)
+RESULTS:=$(patsubst %.nc,%.result,$(TESTS))
 
-.PHONY:	all clean
+.PHONY:	all clean test
 
 all:	gcode-canon
 
 clean:
 	rm -f *.o gcode-canon
+	rm -f tests/*.result
+
+test:	gcode-canon $(RESULTS)
+	cd tests; ./check-results.sh; cd ..
 
 %.c:	$(HEADERS)
 
 gcode-canon: $(OBJECTS)
 	$(CC) $(OBJECTS) -lm -o gcode-canon
+
+# We cannot run any tests for which we don't know the intended result
+%.nc:	%.out
+%.out:
+	echo "You're missing $@ for that test!"
+%.result:	%.nc
+	./gcode-canon $^ | egrep '^M(SG|POS)' > $@
