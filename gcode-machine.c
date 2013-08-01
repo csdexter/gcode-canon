@@ -241,8 +241,19 @@ bool move_machine_aux(TGCodeAuxiliaryMachine mode, uint32_t P) {
       GCODE_DEBUG("Would advance indexer %d steps", (P == UINT32_MAX ? 1 : P));
       break;
     case GCODE_RETRACT_Z:
+      //TODO: this is wrong, should be Zmax instead or thereabouts
       machineZ = 0;
       GCODE_DEBUG("Z-axis retracted/parked");
+      break;
+    case GCODE_APC_1:
+    case GCODE_APC_2:
+      set_parameter(GCODE_PARM_CURRENT_PALLET, mode - GCODE_APC_1 + 1);
+      GCODE_DEBUG("Performed APC to pallet %d", mode - GCODE_APC_1 + 1);
+      break;
+    case GCODE_APC_SWAP:
+      set_parameter(GCODE_PARM_CURRENT_PALLET,
+          (fetch_parameter(GCODE_PARM_CURRENT_PALLET) == 1 ? 2 : 1));
+      GCODE_DEBUG("Would swap pallets")
       break;
     default:
       return false;

@@ -36,6 +36,7 @@
 #define GCODE_PARM_FEED_HOME_Z 2003
 #define GCODE_PARM_BITFIELD1 3004
 #define GCODE_PARM_BITFIELD2 3005
+#define GCODE_PARM_CURRENT_PALLET 3007
 #define GCODE_PARM_CURRENT_TOOL 3101
 /* Absolute GCode coordinates at end of current block */
 #define GCODE_PARM_FIRST_CEOB 5001
