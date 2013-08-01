@@ -34,6 +34,7 @@ bool init_machine(void *data) {
   enable_override_machine(GCODE_OVERRIDE_ON);
   stillRunning = true;
   enable_power_machine(GCODE_SERVO_ON);
+  set_parameter(GCODE_PARM_CURRENT_PALLET, 1);
   /* By default our home and zero positions are at (0, 0, 0) */
   set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X, machineX);
   set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y, machineY);
