@@ -246,6 +246,8 @@ bool update_gcode_state(char *line) {
             get_gcode_word_integer('H'));
       else currentGCodeState.system.lenComp.offset = lengthof_tool(
           currentGCodeState.T);
+      set_parameter(GCODE_PARM_FIRST_OFFSET + GCODE_AXIS_Z,
+                    currentGCodeState.system.lenComp.offset);
     }
   }
   if((arg = have_gcode_word('G', 7, GCODE_MCS, GCODE_WCS_1, GCODE_WCS_2,
