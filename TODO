@@ -3,3 +3,4 @@
 * fix all remaining weird stuff in NOTES (such as being unable to parse G00.000 as G00)
 * complete the testing suite
 * complete parameter mirroring for system status
+* do a thorough analysis and decide whether to implement canned cycles in gcode-machine, gcode-state or gcode-input

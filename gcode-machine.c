@@ -164,6 +164,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
 bool move_machine_cycle(TGCodeCycleMode mode, double X, double Y, double Z,
     TGCodeRetractMode retract, uint16_t L, double P, double Q, double R,
     TGCodeFeedMode feedMode, uint16_t F) {
+  //TODO: implement canned cycles
   if(!servoPower) return false;
   GCODE_DEBUG("Canned cycle %d", mode);
 
