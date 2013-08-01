@@ -42,6 +42,7 @@ static TGCodeState currentGCodeState = {
       0.0
     },
     GCODE_WCS_1,
+    GCODE_WCS_1,
     {
       GCODE_MIRROR_OFF_S,
       0.0,
@@ -247,10 +248,14 @@ bool update_gcode_state(char *line) {
           currentGCodeState.T);
     }
   }
-  //TODO: implement G53 (non-modal machine coordinate system)
-  if((arg = have_gcode_word('G', 6, GCODE_WCS_1, GCODE_WCS_2, GCODE_WCS_3,
-                            GCODE_WCS_4, GCODE_WCS_5, GCODE_WCS_6)))
+  if((arg = have_gcode_word('G', 7, GCODE_MCS, GCODE_WCS_1, GCODE_WCS_2,
+                            GCODE_WCS_3, GCODE_WCS_4, GCODE_WCS_5,
+                            GCODE_WCS_6))) {
+    if(arg == GCODE_MCS)
+      currentGCodeState.system.oldCurrent = currentGCodeState.system.current;
     currentGCodeState.system.current = arg;
+    set_parameter(GCODE_PARM_CURRENT_WCS, currentGCodeState.system.current);
+  }
   if((arg = have_gcode_word('M', 3, GCODE_MIRROR_X, GCODE_MIRROR_Y,
                             GCODE_MIRROR_OFF_M))) enable_mirror_machine(arg);
   if((arg = have_gcode_word('G', 2, GCODE_MIRROR_ON, GCODE_MIRROR_OFF_S))) {
@@ -544,6 +549,10 @@ bool update_gcode_state(char *line) {
   if(currentGCodeState.nonModalPathMode && currentGCodeState.motionMode != OFF) {
     select_pathmode_machine(currentGCodeState.oldPathMode);
     currentGCodeState.nonModalPathMode = false;
+  }
+  if(currentGCodeState.system.current == GCODE_MCS) {
+    currentGCodeState.system.current = currentGCodeState.system.oldCurrent;
+    set_parameter(GCODE_PARM_CURRENT_WCS, currentGCodeState.system.current);
   }
   if((arg = have_gcode_word('M', 10, GCODE_STOP_COMPULSORY, GCODE_STOP_OPTIONAL,
                             GCODE_STOP_END, GCODE_SERVO_ON, GCODE_SERVO_OFF,

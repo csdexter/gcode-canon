@@ -21,16 +21,20 @@ double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input,
   if(!isnan(input)) {
     input = to_metric_math(*system, input);
     if(system->absolute == GCODE_ABSOLUTE) {
-      return fetch_parameter(GCODE_PARM_FIRST_WCS +
-          (system->current - GCODE_WCS_1) * GCODE_PARM_WCS_SIZE + axis) +
-          offset + input;
+      return (
+          system->current == GCODE_MCS ?
+              0.0 :
+              fetch_parameter(
+                  GCODE_PARM_FIRST_WCS +
+                  (system->current - GCODE_WCS_1) *
+                  GCODE_PARM_WCS_SIZE + axis) + offset) +
+          input;
     } else return previous + input;
   } else return previous;
 }
 
 bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y,
     double Z) {
-  //TODO: also provide for G53 (a.k.a. WCS0, a.k.a. MCS)
   //Apply geometric transformations
   if(system->cartesian == GCODE_CARTESIAN) {
     system->gX = X = do_G_coordinate_math(system, X, system->offset.X,

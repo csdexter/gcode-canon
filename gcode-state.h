@@ -228,7 +228,7 @@ typedef struct {
   TGCodePlaneMode plane;
   TGCodeUnitsMode units;
   TGCodeCompSpec radComp, lenComp;
-  TGCodeCurrentSystem current;
+  TGCodeCurrentSystem current, oldCurrent;
   TGCodeMirrorSpec mirror;
   TGCodeRotationSpec rotation;
   TGCodeAbsoluteMode absolute;
