@@ -165,11 +165,11 @@ bool init_gcode_state(void *data) {
       (currentGCodeState.system.units == GCODE_UNITS_INCH ? GCODE_STATE_PF_IMPERIAL : 0x00));
   /* By default, logical origin == G-Code origin */
   set_parameter(GCODE_PARM_FIRST_LOCAL + GCODE_AXIS_X,
-                currentGCodeState.system.X);
+                currentGCodeState.system.gX);
   set_parameter(GCODE_PARM_FIRST_LOCAL + GCODE_AXIS_Y,
-                currentGCodeState.system.Y);
+                currentGCodeState.system.gY);
   set_parameter(GCODE_PARM_FIRST_LOCAL + GCODE_AXIS_Z,
-                currentGCodeState.system.Z);
+                currentGCodeState.system.gZ);
   /* WCS #1 is selected */
   set_parameter(GCODE_PARM_CURRENT_WCS, 1);
 
