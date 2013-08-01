@@ -516,6 +516,12 @@ bool update_gcode_state(char *line) {
         break;
     }
   } else currentGCodeState.axisWordsConsumed = false;
+
+  update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_X, currentGCodeState.system.gX);
+  update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_Y, currentGCodeState.system.gY);
+  update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_Z, currentGCodeState.system.gZ);
+  commit_parameters();
+
   switch(currentGCodeState.motionMode) {
     case RAPID:
       move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
