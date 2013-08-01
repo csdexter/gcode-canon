@@ -21,7 +21,7 @@
 
 static double *parametersStack[GCODE_MACRO_COUNT];
 static TProgramPointer *programStack[GCODE_SUBPROGRAM_COUNT];
-uint8_t paSP, prSP;
+static uint8_t paSP, prSP;
 
 
 bool init_stacks(void *data) {

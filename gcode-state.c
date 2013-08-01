@@ -573,7 +573,7 @@ bool update_gcode_state(char *line) {
   if(have_gcode_word('M', 1, 98)) {
     TProgramPointer programState;
 
-    // Set current line
+    // Set current offset (which is after the line containing the M98)
     programState.programCounter = tell_input();
     // Set current status
     programState.macroCall = currentGCodeState.macroCall;

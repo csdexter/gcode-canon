@@ -19,7 +19,7 @@
 
 
 typedef struct {
-    uint16_t programCounter;
+    long programCounter;
     bool macroCall;
     uint16_t repeatCount;
 } TProgramPointer;

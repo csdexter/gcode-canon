@@ -1,7 +1,6 @@
 * we are not a G-Code validator, input must be well formed. We will fathom the 
   widest possible extent of G-Code in use in the wild, but we will neither
   check nor fix your spelling.
-* not more than 65536 lines per G-Code file
 * machine coordinate system is in mm
 * only three axes (no A,B,C)
 * arc I,J,K are *always* relative to the arc starting point

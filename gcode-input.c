@@ -23,10 +23,8 @@
 
 
 static FILE *input;
-static uint16_t currentLine;
 static TGCodeProgramIndexEntry programs[GCODE_PROGRAM_CAPACITY];
 static uint8_t programCount;
-
 
 bool init_input(void *data) {
   input = (FILE *)data;
@@ -46,33 +44,24 @@ bool init_input(void *data) {
 
 bool rewind_input(void) {
   rewind(input);
-  currentLine = 1;
 
   GCODE_DEBUG("Program reset");
 
   return true;
 }
 
-bool seek_input(uint16_t lineNumber) {
-  int i;
-  char *dummy, *result;
+bool seek_input(long offset) {
+  int result;
 
-  if(lineNumber < currentLine) rewind_input();
+  result = fseek(input, offset, SEEK_SET);
 
-  dummy = (char *)malloc(0xFF);
-  result = dummy; /* Prevent uninitialized usage */
+  GCODE_DEBUG("Seek to offset %zd in input file", offset);
 
-  for(i = currentLine; i < lineNumber && result; i++)
-    result = fgets(dummy, 0xFF, input);
-  free(dummy);
-
-  GCODE_DEBUG("Seek to line %d", lineNumber);
-
-  return result ? true : false;
+  return result ? false : true;
 }
 
-uint16_t tell_input(void) {
-  return currentLine;
+long tell_input(void) {
+  return ftell(input);
 }
 
 char fetch_char_input(void) {
@@ -95,7 +84,6 @@ bool fetch_line_input(char *line) {
         c = fetch_char_input();
         if(c != '\n') ungetc(c, input);
       }
-      currentLine++;
 
       if(i) break; /* EOL with data: return line */
       else continue; /* EOL without data: strip empty line */
@@ -128,7 +116,7 @@ bool fetch_line_input(char *line) {
     if(c == 'N' || c == 'O') {
       int d;
 
-      if(i) display_machine_message("PER: N or O word not at start of block!");
+      if(i) display_machine_message("WAR: N or O word not at start of block!");
 
       j = 0;
       /* read the number, which should be a literal integer */
@@ -145,7 +133,7 @@ bool fetch_line_input(char *line) {
           /* Better mess with precision than signedness */
           programs[programCount].program = (uint16_t)atol(commsg);
           /* The line immediately after the O word */
-          programs[programCount].offset = tell_input() + 1;
+          programs[programCount].offset = tell_input();
           programCount++;
         } else display_machine_message("PER: Program table overflow!");
       } else {
@@ -162,7 +150,7 @@ bool fetch_line_input(char *line) {
   return c == EOF ? false : true;
 }
 
-uint16_t get_program_input(uint16_t program) {
+long get_program_input(uint16_t program) {
   uint8_t i;
   for(i = 0; i < GCODE_PROGRAM_CAPACITY; i++)
     if(programs[i].program == program) return programs[i].offset;
