@@ -347,9 +347,7 @@ bool update_gcode_state(char *line) {
       currentGCodeState.motionMode = STORE;
     } else currentGCodeState.motionMode = currentGCodeState.oldMotionMode;
   }
-  if(have_gcode_word('G', 1, 92)) {
-    //TODO: consider whether G92 should ignore previous G92 values
-    //TODO: consider whether aliasing G52 to G92 is worthy
+  if(have_gcode_word('G', 2, 52, 92)) {
     currentGCodeState.system.offset.X = do_G_coordinate_math(
         &currentGCodeState.system, get_gcode_word_real('X'),
         currentGCodeState.system.offset.X, currentGCodeState.system.gX,
@@ -363,6 +361,13 @@ bool update_gcode_state(char *line) {
         currentGCodeState.system.offset.Z, currentGCodeState.system.gZ,
         GCODE_AXIS_Z);
     currentGCodeState.axisWordsConsumed = true;
+    update_parameter(GCODE_PARM_FIRST_LOCAL + GCODE_AXIS_X,
+                     currentGCodeState.system.offset.X);
+    update_parameter(GCODE_PARM_FIRST_LOCAL + GCODE_AXIS_Y,
+                     currentGCodeState.system.offset.Y);
+    update_parameter(GCODE_PARM_FIRST_LOCAL + GCODE_AXIS_Z,
+                     currentGCodeState.system.offset.Z);
+    commit_parameters();
   }
   if((arg = have_gcode_word('G', 6, GCODE_MOVE_RAPID, GCODE_MOVE_FEED,
                             GCODE_MODE_ARC_CW, GCODE_MODE_ARC_CCW,
