@@ -9,6 +9,7 @@
  */
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,15 +26,20 @@
 static FILE *input;
 static TGCodeProgramIndexEntry programs[GCODE_PROGRAM_CAPACITY];
 static uint8_t programCount;
+static bool spliced;
+static const char *splice;
+static ptrdiff_t splicep;
 
 bool init_input(void *data) {
   input = (FILE *)data;
   memset(&programs, 0x00, sizeof(programs));
   programCount = 0;
+  spliced = false;
 
   GCODE_DEBUG("Input stream up, %d program table entries available",
               GCODE_PROGRAM_CAPACITY);
-  /* Protect against numbering system strangeness on other locales */
+  /* Protect against numbering system strangeness on other locales. Also makes
+   * "upper case" have a very well defined meaning */
   setlocale(LC_ALL, "C");
   display_machine_message("STA: Scanning input for programs (O words)");
   while(fetch_line_input(NULL));
@@ -65,7 +71,15 @@ long tell_input(void) {
 }
 
 char fetch_char_input(void) {
-  return fgetc(input);
+  if(spliced && splice[splicep]) return splice[splicep++];
+  else {
+    if(spliced) {
+      spliced = false;
+      free(splice);
+    }
+
+    return fgetc(input);
+  }
 }
 
 bool fetch_line_input(char *line) {
@@ -156,6 +170,16 @@ long get_program_input(uint16_t program) {
     if(programs[i].program == program) return programs[i].offset;
 
   return 0;
+}
+
+bool splice_input(const char *data) {
+  if(!spliced) {
+    splice = data;
+    spliced = true;
+    splicep = 0;
+
+    return true;
+  } else return false;
 }
 
 bool done_input(void) {

@@ -43,6 +43,13 @@ char fetch_char_input(void);
 bool fetch_line_input(char *line);
 /* Where does O<n> start? */
 long get_program_input(uint16_t program);
+/* Splices data into the input stream. After the call, fetch_char_input() will
+ * operate on data instead of the input file (which remains otherwise open and
+ * unaffected). When '\0' is read from data, input is switched back to the
+ * input file and data is free()d.
+ * Calling subprograms from spliced code results in undefined behavior.
+ * Returns true if successful, false if already spliced. */
+bool splice_input(const char *data);
 bool done_input(void);
 
 
