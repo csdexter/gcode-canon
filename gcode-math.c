@@ -130,5 +130,6 @@ bool do_WCS_cycle_math(TGCodeCoordinateInfo *system, double X, double Y,
 }
 
 double to_metric_math(const TGCodeCoordinateInfo system, const double value) {
-  return (system.units == GCODE_UNITS_INCH ? value * GCODE_INCH2MM : value);
+  if(isnan(value)) return value;
+  else return (system.units == GCODE_UNITS_INCH ? value * GCODE_INCH2MM : value);
 }
