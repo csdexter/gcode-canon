@@ -25,6 +25,7 @@
 #include "gcode-tools.h"
 #include "gcode-math.h"
 #include "gcode-stacks.h"
+#include "gcode-cycles.h"
 
 
 static TGCodeWordCache parseCache;
@@ -383,7 +384,7 @@ bool update_gcode_state(char *line) {
     if(!(arg == GCODE_MOVE_RAPID || arg == GCODE_MOVE_FEED)) {
       /* We just switched *to* arc interpolation, so start with sane values */
       currentGCodeState.I = currentGCodeState.J = currentGCodeState.K = 0.0;
-      currentGCodeState.R = nan;
+      currentGCodeState.R = NAN;
     }
   }
   if((arg = have_gcode_word('G', 13, GCODE_CYCLE_PROBE_IN,
