@@ -75,7 +75,7 @@ char fetch_char_input(void) {
   else {
     if(spliced) {
       spliced = false;
-      free(splice);
+      free((void *)splice);
     }
 
     return fgetc(input);

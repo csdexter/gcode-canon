@@ -36,8 +36,6 @@ typedef enum {
   GCODE_CYCLE_HOME = 28,
   GCODE_CYCLE_RETURN = 29,
   GCODE_CYCLE_ZERO = 30,
-  GCODE_CYCLE_PROBE_IN = 31,
-  GCODE_CYCLE_PROBE_OUT = 38,
   GCODE_CYCLE_DRILL_PP = 73,
   GCODE_CYCLE_TAP_LH = 74,
   GCODE_CYCLE_CANCEL = 80,
@@ -195,7 +193,9 @@ typedef enum {
 typedef enum {
   GCODE_SPINDLE_ORIENTATION = 19,
   GCODE_INDEXER_STEP = 20,
-  GCODE_RETRACT_Z = 25
+  GCODE_RETRACT_Z = 25,
+  GCODE_CYCLE_PROBE_IN = 31,
+  GCODE_CYCLE_PROBE_OUT = 38
 } TGCodeAuxiliaryMachine;
 
 typedef struct {
@@ -297,6 +297,9 @@ double get_gcode_word_real_default(char word, double defVal);
 /* Return the argument of the given word as an integer or ULONG_MAX if no such
  * word was on the line */
 uint32_t get_gcode_word_integer(char word);
+/* Return the argument of the given word as an integer or defVal if no such
+ * word was on the line */
+uint32_t get_gcode_word_integer_default(char word, uint32_t defVal);
 /* Scan line for parameter assignments (#<number>=<expression>) and update
  * parameter store accordingly. */
 bool process_gcode_parameters(void);

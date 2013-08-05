@@ -402,15 +402,40 @@ bool update_gcode_state(char *line) {
                             GCODE_CYCLE_BORING_WD_NS))) {
     currentGCodeState.motionMode = CYCLE;
     currentGCodeState.cycle = arg;
-    /* It's a canned cycle, fetch I,J,L,P,Q,R now for later */
+    /* It's a canned cycle, fetch I,J,K,L,P,Q,R now for later */
     if(!(arg == GCODE_CYCLE_PROBE_IN || arg == GCODE_CYCLE_PROBE_OUT)) {
-      //TODO: check for inch-ness among params and fix accordingly
-      currentGCodeState.I = get_gcode_word_real('I');
-      currentGCodeState.J = get_gcode_word_real('J');
-      currentGCodeState.L = get_gcode_word_integer('L');
-      currentGCodeState.P = get_gcode_word_real('P');
-      currentGCodeState.Q = get_gcode_word_real('Q');
-      currentGCodeState.R = get_gcode_word_real('R');
+      if(!(arg == GCODE_CYCLE_TAP_LH || arg == GCODE_CYCLE_TAP_RH))
+        /* Z-retract level, where the machine will go after the cycle */
+        currentGCodeState.R = do_G_coordinate_math(
+          &currentGCodeState.system, get_gcode_word_real('R'),
+          currentGCodeState.system.offset.Z, currentGCodeState.system.gZ,
+          GCODE_AXIS_Z);
+      else
+        /* pitch of thread in units of length per revolution */
+        currentGCodeState.K = to_metric_math(
+          currentGCodeState.system, get_gcode_word_real('K'));
+      /* Number of repeats or "exactly once" if unspecified */
+      currentGCodeState.L = get_gcode_word_integer_default('L', 1);
+      if(arg == GCODE_CYCLE_DRILL_WD || arg == GCODE_CYCLE_BORING_WD_WS ||
+         arg == GCODE_CYCLE_BORING_MANUAL || arg == GCODE_CYCLE_BORING_WD_NS)
+        /* Dwell time */
+        currentGCodeState.P = get_gcode_word_real('P');
+      if(arg == GCODE_CYCLE_DRILL_PP || arg == GCODE_CYCLE_DRILL_PF)
+        /* Delta distance for chip breaking */
+        currentGCodeState.Q = to_metric_math(
+          currentGCodeState.system, get_gcode_word_real('Q'));
+      if(arg == GCODE_CYCLE_BORING_BACK) {
+        /* How deep the back-bore should be */
+        currentGCodeState.K = do_G_coordinate_math(
+          &currentGCodeState.system, get_gcode_word_real('K'),
+          currentGCodeState.system.offset.Z, currentGCodeState.system.gZ,
+          GCODE_AXIS_Z);
+        /* Where to enter the hole at so that the tool fits */
+        currentGCodeState.I = to_metric_math(
+          currentGCodeState.system, get_gcode_word_real_default('I', 0.0));
+        currentGCodeState.J = to_metric_math(
+          currentGCodeState.system, get_gcode_word_real_default('J', 0.0));
+      }
     }
   }
   if((arg = have_gcode_word('M', 3, GCODE_SPINDLE_ORIENTATION,
@@ -426,9 +451,6 @@ bool update_gcode_state(char *line) {
    * Everything below this line will use whatever results from pushing the axis
    * word arguments through the current coordinate transformation. */
   if(!currentGCodeState.axisWordsConsumed) {
-    /* if a cycle, then X,Y,Z,R must be translated. If absolute, translate as
-     * for normal moves; if incremental, translate X,Y as absolute and Z,R as
-     * incremental */
     switch(currentGCodeState.motionMode) {
       case CYCLE:
         do_WCS_cycle_math(&currentGCodeState.system, get_gcode_word_real('X'),
@@ -722,6 +744,13 @@ double get_gcode_word_real_default(char word, double defVal) {
 uint32_t get_gcode_word_integer(char word) {
   if(!_refresh_gcode_parse_cache(word)) return UINT32_MAX;
   else return read_gcode_integer(&parseCache.at[1]);
+}
+
+uint32_t get_gcode_word_integer_default(char word, uint32_t defVal) {
+  uint32_t tmp = get_gcode_word_integer(word);
+
+  if(tmp == UINT32_MAX) return defVal;
+  else return tmp;
 }
 
 bool process_gcode_parameters(void) {
