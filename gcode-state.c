@@ -404,6 +404,8 @@ bool update_gcode_state(char *line) {
     currentGCodeState.motionMode = MACRO;
     currentGCodeState.macroCall = true;
   }
+  /* Have we just popped back to the real world? */
+  if(end_of_spliced_input()) currentGCodeState.motionMode = CYCLE;
   /* Sequence point: we read the axis words here and do the WCS math. All
    * axis-word-eating commands MUST be above this line and set
    * axisWordsConsumed to true.
@@ -464,7 +466,7 @@ bool update_gcode_state(char *line) {
             &currentGCodeState.system, get_gcode_word_real('Z'),
             currentGCodeState.system.offset.X, currentGCodeState.system.gX,
             GCODE_AXIS_X);
-        //TODO: canned cycle code injection which occurs here
+        splice_input(generate_cycle(currentGCodeState, oldZ, newX, newY, newZ));
         break;
       case STORE:
         switch(get_gcode_word_integer('L')) {
@@ -589,12 +591,9 @@ bool update_gcode_state(char *line) {
                        currentGCodeState.feedMode, currentGCodeState.F);
       break;
     case CYCLE:
-      move_machine_cycle(currentGCodeState.cycle, currentGCodeState.system.X,
-                         currentGCodeState.system.Y, currentGCodeState.system.Z,
-                         currentGCodeState.retractMode, currentGCodeState.L,
-                         currentGCodeState.P, currentGCodeState.Q,
-                         currentGCodeState.R, currentGCodeState.feedMode,
-                         currentGCodeState.F);
+      /* Nothing to do, the freshly injected code above will move away from this
+       * mode with its first line. We will come back to this mode when the
+       * injected code ends */
       break;
     default:
       /*NOP*/;

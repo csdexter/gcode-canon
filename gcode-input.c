@@ -26,7 +26,7 @@
 static FILE *input;
 static TGCodeProgramIndexEntry programs[GCODE_PROGRAM_CAPACITY];
 static uint8_t programCount;
-static bool spliced;
+static bool spliced, endOfSplice;
 static const char *splice;
 static ptrdiff_t splicep;
 
@@ -75,6 +75,7 @@ char fetch_char_input(void) {
   else {
     if(spliced) {
       spliced = false;
+      endOfSplice = true;
       free((void *)splice);
     }
 
@@ -176,8 +177,16 @@ bool splice_input(const char *data) {
   if(!spliced) {
     splice = data;
     spliced = true;
+    endOfSplice = false;
     splicep = 0;
 
+    return true;
+  } else return false;
+}
+
+bool end_of_spliced_input(void) {
+  if(endOfSplice) {
+    endOfSplice = false;
     return true;
   } else return false;
 }

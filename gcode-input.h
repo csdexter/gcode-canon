@@ -50,6 +50,8 @@ long get_program_input(uint16_t program);
  * Calling subprograms from spliced code results in undefined behavior.
  * Returns true if successful, false if already spliced. */
 bool splice_input(const char *data);
+/* Returns true exactly once if the end of the input splice was reached */
+bool end_of_spliced_input(void);
 bool done_input(void);
 
 
