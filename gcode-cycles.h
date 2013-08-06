@@ -14,6 +14,10 @@
 
 #include "gcode-state.h"
 
+
+#define GCODE_CYCLE_BUFSLICE 0xFFU
+#define GCODE_CYCLE_MAXSLICES 32
+
 /* Generates G-Code for the canned cycle in state.cycle. The char * allocated
  * here will be freed in gcode-input, when the '\0' at its end will be read by
  * fetch_char_input */

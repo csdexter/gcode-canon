@@ -421,15 +421,11 @@ bool update_gcode_state(char *line) {
           /* Number of repeats or "exactly once" if unspecified */
           currentGCodeState.L = get_gcode_word_integer_default('L', 1);
           /* Retract level */
-          currentGCodeState.R = do_G_coordinate_math(
-              &currentGCodeState.system, get_gcode_word_real('R'),
-              currentGCodeState.system.offset.Z, currentGCodeState.R,
-              GCODE_AXIS_Z);
+          currentGCodeState.R = get_gcode_word_real_default('R', currentGCodeState.R);
           if(currentGCodeState.cycle == GCODE_CYCLE_TAP_LH ||
              currentGCodeState.cycle == GCODE_CYCLE_TAP_RH)
             /* pitch of thread in units of length per revolution */
-            currentGCodeState.K = to_metric_math(
-                currentGCodeState.system, get_gcode_word_real('K'));
+            currentGCodeState.K = get_gcode_word_real_default('K', currentGCodeState.K);
           if(currentGCodeState.cycle == GCODE_CYCLE_DRILL_WD ||
              currentGCodeState.cycle == GCODE_CYCLE_BORING_WD_WS ||
              currentGCodeState.cycle == GCODE_CYCLE_BORING_MANUAL ||
@@ -439,19 +435,13 @@ bool update_gcode_state(char *line) {
           if(currentGCodeState.cycle == GCODE_CYCLE_DRILL_PP ||
              currentGCodeState.cycle == GCODE_CYCLE_DRILL_PF)
             /* Delta distance for chip breaking */
-            currentGCodeState.Q = to_metric_math(
-              currentGCodeState.system, get_gcode_word_real('Q'));
+            currentGCodeState.Q = get_gcode_word_real_default('Q', currentGCodeState.Q);
           if(currentGCodeState.cycle == GCODE_CYCLE_BORING_BACK) {
             /* How deep the back bore should be */
-            currentGCodeState.K = do_G_coordinate_math(
-                &currentGCodeState.system, get_gcode_word_real('K'),
-                currentGCodeState.system.offset.Z, currentGCodeState.K,
-                GCODE_AXIS_Z);
+            currentGCodeState.K = get_gcode_word_real_default('K', currentGCodeState.K);
             /* Where to enter the hole at so that the tool fits */
-            currentGCodeState.I = to_metric_math(
-              currentGCodeState.system, get_gcode_word_real_default('I', 0.0));
-            currentGCodeState.J = to_metric_math(
-              currentGCodeState.system, get_gcode_word_real_default('J', 0.0));
+            currentGCodeState.I = get_gcode_word_real_default('I', currentGCodeState.I);
+            currentGCodeState.J = get_gcode_word_real_default('J', currentGCodeState.J);
           }
         }
         double oldZ = currentGCodeState.system.gZ;
@@ -461,12 +451,12 @@ bool update_gcode_state(char *line) {
             GCODE_AXIS_X);
         double newY = do_G_coordinate_math(
             &currentGCodeState.system, get_gcode_word_real('Y'),
-            currentGCodeState.system.offset.X, currentGCodeState.system.gX,
-            GCODE_AXIS_X);
+            currentGCodeState.system.offset.Y, currentGCodeState.system.gY,
+            GCODE_AXIS_Y);
         double newZ = do_G_coordinate_math(
             &currentGCodeState.system, get_gcode_word_real('Z'),
-            currentGCodeState.system.offset.X, currentGCodeState.system.gX,
-            GCODE_AXIS_X);
+            currentGCodeState.system.offset.Z, currentGCodeState.system.gZ,
+            GCODE_AXIS_Z);
         splice_input(generate_cycle(currentGCodeState, oldZ, newX, newY, newZ));
         break;
       case STORE:
