@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "gcode-commons.h"
@@ -24,9 +25,9 @@ static const char GCODE_CYCLE_PRE_2[] = "G00 Z%4.2f\n";
 static const char GCODE_CYCLE_POST[] = "G%02d Z%4.2f\n";
 
 static void _add_generated_line(char **data, uint8_t *index) {
-  if((strlen(data[index]) + strlen(data[0])) >= GCODE_CYCLE_BUFSLICE)
-    data[index++] = (char *)calloc(GCODE_CYCLE_BUFSLICE, 1);
-  strncat(data[index], data[0], GCODE_CYCLE_BUFSLICE);
+  if((strlen(data[*index]) + strlen(data[0])) >= GCODE_CYCLE_BUFSLICE)
+    data[*index++] = (char *)calloc(GCODE_CYCLE_BUFSLICE, 1);
+  strncat(data[*index], data[0], GCODE_CYCLE_BUFSLICE);
   data[0][0] = '\0';
 }
 
@@ -34,7 +35,6 @@ char *generate_cycle(TGCodeState state) {
   double preZ = state.system.Z;
   char *slices[GCODE_CYCLE_MAXSLICES];
   uint8_t curSlice = 1;
-  int written;
   slices[0] = (char *)calloc(GCODE_CYCLE_BUFSLICE, 1);
   slices[curSlice] = (char *)calloc(GCODE_CYCLE_BUFSLICE, 1);
 
