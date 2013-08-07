@@ -244,6 +244,8 @@ typedef struct {
    * transformations are active. Also always in mm, always Cartesian, always
    * absolute */
   double gX, gY, gZ;
+  /* These are the raw values read from the block, only used by canned cycles. */
+  double cX, cY, cZ;
 } TGCodeCoordinateInfo;
 
 typedef struct {

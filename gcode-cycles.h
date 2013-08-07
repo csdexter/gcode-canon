@@ -21,6 +21,6 @@
 /* Generates G-Code for the canned cycle in state.cycle. The char * allocated
  * here will be freed in gcode-input, when the '\0' at its end will be read by
  * fetch_char_input */
-char *generate_cycle(TGCodeState state, double oldZ, double X, double Y, double Z);
+char *generate_cycle(TGCodeState state);
 
 #endif /* GCODE_CYCLES_H_ */

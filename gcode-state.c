@@ -82,6 +82,10 @@ static TGCodeState currentGCodeState = {
     /* gX, gY, gZ */
     0.0,
     0.0,
+    0.0,
+    /* cX, cY, cZ */
+    0.0,
+    0.0,
     0.0
   },
   GCODE_RETRACT_LAST,
@@ -397,6 +401,12 @@ bool update_gcode_state(char *line) {
                             GCODE_CYCLE_BORING_WD_NS))) {
     currentGCodeState.motionMode = CYCLE;
     currentGCodeState.cycle = arg;
+    /* Mode has just changed *to* cycle so we must make sure we start with sane values */
+    currentGCodeState.system.cX = currentGCodeState.system.cY =
+        currentGCodeState.system.cZ = NAN;
+    currentGCodeState.R = currentGCodeState.system.gZ;
+    currentGCodeState.K = currentGCodeState.P = currentGCodeState.Q =
+        currentGCodeState.I = currentGCodeState.J = 0.0;
   }
   if((arg = have_gcode_word('M', 3, GCODE_SPINDLE_ORIENTATION,
                             GCODE_INDEXER_STEP, GCODE_RETRACT_Z)))
@@ -444,20 +454,13 @@ bool update_gcode_state(char *line) {
             currentGCodeState.J = get_gcode_word_real_default('J', currentGCodeState.J);
           }
         }
-        double oldZ = currentGCodeState.system.gZ;
-        double newX = do_G_coordinate_math(
-            &currentGCodeState.system, get_gcode_word_real('X'),
-            currentGCodeState.system.offset.X, currentGCodeState.system.gX,
-            GCODE_AXIS_X);
-        double newY = do_G_coordinate_math(
-            &currentGCodeState.system, get_gcode_word_real('Y'),
-            currentGCodeState.system.offset.Y, currentGCodeState.system.gY,
-            GCODE_AXIS_Y);
-        double newZ = do_G_coordinate_math(
-            &currentGCodeState.system, get_gcode_word_real('Z'),
-            currentGCodeState.system.offset.Z, currentGCodeState.system.gZ,
-            GCODE_AXIS_Z);
-        splice_input(generate_cycle(currentGCodeState, oldZ, newX, newY, newZ));
+        currentGCodeState.system.cX = get_gcode_word_real_default(
+            'X', currentGCodeState.system.cX);
+        currentGCodeState.system.cY = get_gcode_word_real_default(
+            'Y', currentGCodeState.system.cY);
+        currentGCodeState.system.cZ = get_gcode_word_real_default(
+            'Z', currentGCodeState.system.cZ);
+        splice_input(generate_cycle(currentGCodeState));
         break;
       case STORE:
         switch(get_gcode_word_integer('L')) {
