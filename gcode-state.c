@@ -460,7 +460,7 @@ bool update_gcode_state(char *line) {
             'Y', currentGCodeState.system.cY);
         currentGCodeState.system.cZ = get_gcode_word_real_default(
             'Z', currentGCodeState.system.cZ);
-        splice_input(generate_cycle(currentGCodeState));
+        splice_input(generate_cycles(currentGCodeState));
         break;
       case STORE:
         switch(get_gcode_word_integer('L')) {

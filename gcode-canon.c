@@ -18,6 +18,7 @@
 #include "gcode-machine.h"
 #include "gcode-state.h"
 #include "gcode-stacks.h"
+#include "gcode-cycles.h"
 
 
 int main(int argc, char *argv[]) {
@@ -31,10 +32,12 @@ int main(int argc, char *argv[]) {
   init_tools(NULL);
   init_input(inputFile);
   init_gcode_state(NULL);
+  init_cycles(NULL);
 
   while(machine_running() && gcode_running() && fetch_line_input(line))
     update_gcode_state(line);
 
+  done_cycles();
   done_input();
   done_tools();
   done_stacks();
