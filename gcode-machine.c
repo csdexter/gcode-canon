@@ -50,6 +50,8 @@ bool init_machine(void *data) {
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
     uint16_t F) {
+  double oldX = machineX, oldY = machineY, oldZ = machineZ;
+
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
     return false;
 
@@ -67,9 +69,28 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
     GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", machineX,
                 machineY, machineZ)
-  else
+  else {
+    switch(feedMode) {
+      case GCODE_FEED_INVTIME:
+        /* Whole distance in 1/F minutes, i.e. move at (distance * F) mm/min */
+        //TODO: allow floating point values for F for this use case
+        F *= sqrt(pow(machineX - oldX, 2) + pow(machineY - oldY, 2) +
+                  pow(machineZ - oldZ, 2));
+        break;
+      case GCODE_FEED_PERREVOLUTION:
+        /* F mm per revolution, i.e. move at (S * F) mm/min */
+        //TODO: allow floating point values for F for this use case
+        F *= spindleSpeed;
+        break;
+      case GCODE_FEED_PERMINUTE:
+        /* F mm/min, i.e. already in the right format */
+        /* NOP */
+        break;
+    }
+
     GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
                 machineX, machineY, machineZ, F);
+  }
   GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
 
   return true;

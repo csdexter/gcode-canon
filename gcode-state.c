@@ -192,7 +192,8 @@ bool update_gcode_state(char *line) {
   parseCache.word = ' ';
   parseCache.at = NULL;
 
-  if((arg = have_gcode_word('G', 2, GCODE_FEED_INVTIME, GCODE_FEED_PERMINUTE)))
+  if((arg = have_gcode_word('G', 3, GCODE_FEED_INVTIME, GCODE_FEED_PERMINUTE,
+                            GCODE_FEED_PERREVOLUTION)))
     currentGCodeState.feedMode = arg;
   // We have integer precision for F, but people would write it as a real.
   if(have_gcode_word('F', 0))

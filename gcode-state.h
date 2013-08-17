@@ -90,7 +90,8 @@ typedef enum {
 
 typedef enum {
   GCODE_FEED_INVTIME = 93,
-  GCODE_FEED_PERMINUTE = 94
+  GCODE_FEED_PERMINUTE = 94,
+  GCODE_FEED_PERREVOLUTION = 95
 } TGCodeFeedMode;
 
 typedef enum {
