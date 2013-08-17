@@ -98,7 +98,7 @@ char *generate_cycles(TGCodeState state) {
     //Compute the previous Z relative to R in case we're in G98
     precZ = 0 - state.R;
 
-    //Z is relative to current position, R was relative to the current
+    //Z is relative to current position, R was relative to the previous
     //position and needs to be made relative to Z
     state.R = 0 - state.system.cZ;
   } else
@@ -163,10 +163,43 @@ char *generate_cycles(TGCodeState state) {
         /* Start spindle */
         _add_generated_line("M%02d\n",
                             (state.cycle == GCODE_CYCLE_TAP_LH ? 4 : 3));
+        feedRetract = false;
+        break;
+      case GCODE_CYCLE_BORING_BACK:
+        _add_generated_line("G00 X%4.2f Y%4.2f\n", state.I, state.J);
+        _add_generated_line("M05\n");
+        _add_generated_line("M19\n");
+        _add_generated_line("G00 Z%4.2f\n", state.system.cZ);
+        _add_generated_line("G00 X%4.2f Y%4.2f\n",
+                            (state.system.absolute == GCODE_ABSOLUTE ?
+                                state.system.cX : -1 * state.I),
+                            (state.system.absolute == GCODE_ABSOLUTE ?
+                                state.system.cY : -1 * state.J));
+        //TODO: make it start in the same direction it was turning before
+        _add_generated_line("M03\n");
+        _add_generated_line("G01 Z%4.2f\n", state.K);
+        _add_generated_line("G01 Z%4.2f\n",
+                            (state.system.absolute == GCODE_ABSOLUTE ?
+                                state.system.cZ : -1 * state.K));
+        _add_generated_line("M05\n");
+        _add_generated_line("M19\n");
+        _add_generated_line("G00 X%4.2f Y%4.2f\n", state.I, state.J);
+        feedRetract = false;
+        /* This does the final move here: we need it in order to satisfy the
+         * condition that every cycle ends in the same spot it started */
+        _add_generated_line("G%02d Z%4.2f\n", (int)feedRetract, state.R);
+        _add_generated_line("G00 X%4.2f Y%4.2f\n",
+                            (state.system.absolute == GCODE_ABSOLUTE ?
+                                state.system.cX : -1 * state.I),
+                            (state.system.absolute == GCODE_ABSOLUTE ?
+                                state.system.cY : -1 * state.J));
+        //TODO: make it start in the same direction it was turning before
+        _add_generated_line("M03\n");
         break;
     }
     /* Final move */
-    _add_generated_line("G%02d Z%4.2f\n", (int)feedRetract, state.R);
+    if(state.cycle != GCODE_CYCLE_BORING_BACK)
+      _add_generated_line("G%02d Z%4.2f\n", (int)feedRetract, state.R);
   }
 
   /* Retract to last Z if in G98 */
