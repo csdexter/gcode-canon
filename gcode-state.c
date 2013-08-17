@@ -195,11 +195,13 @@ bool update_gcode_state(char *line) {
   if((arg = have_gcode_word('G', 3, GCODE_FEED_INVTIME, GCODE_FEED_PERMINUTE,
                             GCODE_FEED_PERREVOLUTION)))
     currentGCodeState.feedMode = arg;
-  // We have integer precision for F, but people would write it as a real.
   if(have_gcode_word('F', 0))
-    currentGCodeState.F = to_metric_math(
-        currentGCodeState.system,
-        override_feed_machine(get_gcode_word_real('F')));
+    if(currentGCodeState.feedMode != GCODE_FEED_INVTIME)
+      currentGCodeState.F = to_metric_math(
+          currentGCodeState.system,
+          override_feed_machine(get_gcode_word_real('F')));
+    else
+      currentGCodeState.F = get_gcode_word_real('F');
   if(have_gcode_word('S', 0))
     set_spindle_speed_machine(override_speed_machine(get_gcode_word_integer('S')));
   if(have_gcode_word('T', 0)) {
