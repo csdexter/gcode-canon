@@ -24,10 +24,6 @@
 #include "gcode-parameters.h"
 
 
-static const char GCODE_CYCLE_PRE_1[] = "G00 Z%4.2f\n";
-static const char GCODE_CYCLE_PRE_2[] = "G00 X%4.2f Y%4.2f\n";
-static const char GCODE_CYCLE_POST[] = "G53 G%02d Z%4.2f\n";
-
 static uint8_t curSlice;
 static char *slices[GCODE_CYCLE_MAXSLICES];
 
@@ -93,9 +89,8 @@ char *generate_cycles(TGCodeState state) {
 
   /* Preparatory move (singleton, only if Z below R) */
   do_WCS_move_math(&state.system, NAN, NAN, state.R);
-  if(state.system.Z > preZ) {
-    _add_generated_line(GCODE_CYCLE_PRE_1, state.R);
-  }
+  if(state.system.Z > preZ)
+    _add_generated_line("G00 Z%4.2f\n", state.R);
   state.system.Z = preZ;
   state.system.gZ = pregZ;
 
@@ -119,9 +114,9 @@ char *generate_cycles(TGCodeState state) {
   /* Repetitions */
   for(rep = 0; rep < state.L; rep++) {
     /* First preparatory move */
-    _add_generated_line(GCODE_CYCLE_PRE_2, state.system.cX, state.system.cY);
+    _add_generated_line("G00 X%4.2f Y%4.2f\n", state.system.cX, state.system.cY);
     /* Second preparatory move */
-    _add_generated_line(GCODE_CYCLE_PRE_1, state.R);
+    _add_generated_line("G00 Z%4.2f\n", state.R);
     /* Actual canned cycle */
     switch(state.cycle) {
       case GCODE_CYCLE_DRILL_ND:
@@ -147,14 +142,36 @@ char *generate_cycles(TGCodeState state) {
         else
           feedRetract = false;
         break;
+      case GCODE_CYCLE_TAP_LH:
+      case GCODE_CYCLE_TAP_RH:
+        /* Stop spindle, disable overrides, per revolution */
+        _add_generated_line("M05 M49 G95 F%4.2f\n", state.K);
+        /* Start spindle, exact stop check, feed in */
+        _add_generated_line("M%02d G09 G01 Z%4.2f\n",
+                            (state.cycle == GCODE_CYCLE_TAP_LH ? 4 : 3),
+                            state.system.cZ);
+        /* Spindle will stop at end of move, but better safe than sorry */
+        _add_generated_line("M05\n");
+        /* Reverse spindle, exact stop check, feed out */
+        _add_generated_line("M%02d G09 G01 Z%4.2f\n",
+                            (state.cycle == GCODE_CYCLE_TAP_RH ? 4 : 3),
+                            state.R);
+        /* Spindle will stop at end of move, but better safe than sorry */
+        _add_generated_line("M05\n");
+        /* Restore feed mode and value, enable overrides */
+        _add_generated_line("G%2d M48 F%4.2f\n", state.feedMode, state.F);
+        /* Start spindle */
+        _add_generated_line("M%02d\n",
+                            (state.cycle == GCODE_CYCLE_TAP_LH ? 4 : 3));
+        break;
     }
     /* Final move */
-    _add_generated_line(GCODE_CYCLE_POST, (int)feedRetract, state.R);
+    _add_generated_line("G%02d Z%4.2f\n", (int)feedRetract, state.R);
   }
 
   /* Retract to last Z if in G98 */
   if(state.retractMode == GCODE_RETRACT_LAST)
-    _add_generated_line(GCODE_CYCLE_POST, (int)false, precZ);
+    _add_generated_line("G%02d Z%4.2f\n", (int)false, precZ);
 
   /* Any extras ? */
   if(state.cycle == GCODE_CYCLE_BORING_WD_WS ||
