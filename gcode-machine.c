@@ -470,7 +470,7 @@ bool do_stop_machine(TGCodeStopMode mode) {
     case GCODE_STOP_E:
       display_machine_message("STA: Machine in E-Stop");
       break;
-    case GCODE_STOP_COMPULSORY:
+    case GCODE_STOP_COMPULSORY + 100: /* Returned as 100 by have_gcode_word() */
       display_machine_message("STA: Machine in compulsory stop");
       break;
     case GCODE_STOP_OPTIONAL:

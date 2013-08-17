@@ -612,7 +612,7 @@ bool update_gcode_state(char *line) {
     switch(arg) {
       case GCODE_STOP_E:
         enable_power_machine(GCODE_SERVO_OFF);
-      case GCODE_STOP_COMPULSORY:
+      case GCODE_STOP_COMPULSORY + 100: /* Returned as 100 by have_gcode_word() */
       case GCODE_STOP_OPTIONAL:
         do_stop_machine(arg);
         break;
