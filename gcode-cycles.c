@@ -85,7 +85,8 @@ bool init_cycles(void *data) {
 char *generate_cycles(TGCodeState state) {
   double preZ = state.system.Z, pregZ = state.system.gZ, precZ;
   bool feedRetract;
-  uint16_t rep;
+  uint16_t peckSteps;
+  double extraMove, howFarDown = 0.0;
 
   /* Preparatory move (singleton, only if Z below R) */
   do_WCS_move_math(&state.system, NAN, NAN, state.R);
@@ -112,7 +113,7 @@ char *generate_cycles(TGCodeState state) {
                 GCODE_PARM_WCS_SIZE + GCODE_AXIS_Z) + state.system.offset.Z);
 
   /* Repetitions */
-  for(rep = 0; rep < state.L; rep++) {
+  while(state.L--) {
     /* First preparatory move */
     _add_generated_line("G00 X%4.2f Y%4.2f\n", state.system.cX, state.system.cY);
     /* Second preparatory move */
@@ -196,6 +197,42 @@ char *generate_cycles(TGCodeState state) {
                                 state.system.cY : -state.J));
         //TODO: make it start in the same direction it was turning before
         _add_generated_line("M03\n");
+        break;
+      case GCODE_CYCLE_DRILL_PP:
+      case GCODE_CYCLE_DRILL_PF:
+        /* Calculate how many movements by Q we need to cover Z. The quotient
+         * is the number of steps. If there is any remainder, that will be an
+         * extra move towards Z proper */
+        peckSteps = (uint16_t)trunc(
+            state.R -
+            (state.system.absolute == GCODE_ABSOLUTE ? state.system.cZ : 0) /
+            state.Q);
+        extraMove = fmod(
+            state.R -
+            (state.system.absolute == GCODE_ABSOLUTE ? state.system.cZ : 0),
+            state.Q);
+        /* Perform the pecks */
+        while(peckSteps--) {
+          /* Z goes down, so feed by -Q in relative mode */
+          _add_generated_line("G91 G01 Z%4.2f\n", -state.Q);
+          if(state.cycle == GCODE_CYCLE_DRILL_PP)
+            /* Partial retract: traverse up by +Q/2 */
+            _add_generated_line("G00 Z%4.2f\n", state.Q / 2);
+          else {
+            /* Full retract: traverse up to where we began, traverse down to
+             * where we were before less Q/2 */
+            howFarDown += state.Q;
+            _add_generated_line("G00 Z%4.2f\n", howFarDown);
+            _add_generated_line("G00 Z%4.2f\n", -(howFarDown - state.Q / 2));
+          }
+          _add_generated_line("G01 Z%4.2f\n", -(state.Q / 2));
+        }
+        /* Still extraMove to go until we reach Z */
+        if(fpclassify(extraMove) == FP_NORMAL)
+          _add_generated_line("G01 Z%4.2f\n", -extraMove);
+        /* Restore previous measurement mode */
+        _add_generated_line("G%02d\n", state.system.absolute);
+        feedRetract = false;
         break;
     }
     /* Final move */
