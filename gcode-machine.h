@@ -56,10 +56,6 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
 bool move_machine_arc(double X, double Y, double Z, double I, double J,
     double K, double R, bool ccw, TGCodePlaneMode plane,
     TGCodeFeedMode feedMode, uint16_t F);
-/* Moves the machine according to the canned cycle defined by mode */
-bool move_machine_cycle(TGCodeCycleMode mode, double X, double Y, double Z,
-    TGCodeRetractMode retract, uint16_t L, double P, double Q, double R,
-    TGCodeFeedMode feedMode, uint16_t F);
 /* Executes either home & recalibrate, go to zero or return from zero going
  * through the point specified if any */
 bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z);

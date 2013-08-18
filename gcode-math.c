@@ -121,14 +121,6 @@ bool do_WCS_move_math(TGCodeCoordinateInfo *system, double X, double Y,
   return true;
 }
 
-bool do_WCS_cycle_math(TGCodeCoordinateInfo *system, double X, double Y,
-    double Z, double R) {
-  //TODO: implement cycle math or fold over to move math
-  if(system->absolute == GCODE_ABSOLUTE) do_WCS_move_math(system, X, Y, Z);
-
-  return true;
-}
-
 double to_metric_math(const TGCodeCoordinateInfo system, const double value) {
   if(isnan(value)) return value;
   else return (system.units == GCODE_UNITS_INCH ? value * GCODE_INCH2MM : value);
