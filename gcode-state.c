@@ -103,7 +103,7 @@ static TGCodeState currentGCodeState = {
   0.0,
   0.0,
   0.0,
-  0,
+  0.0,
   0,
   0
 };

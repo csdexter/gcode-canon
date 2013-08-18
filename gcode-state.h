@@ -260,8 +260,8 @@ typedef struct {
   bool macroCall;
   bool axisWordsConsumed;
   bool ccw;
-  double I, J, K, P, Q, R;
-  uint16_t F, L;
+  double F, I, J, K, P, Q, R;
+  uint16_t L;
   uint8_t T;
 } TGCodeState;
 

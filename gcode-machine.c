@@ -26,6 +26,27 @@ static TGCodeMachineState currentMachineState;
 static bool stillRunning, servoPower;
 
 
+double _adjust_feed(TGCodeFeedMode mode, double F, double oldX, double oldY,
+    double oldZ, double newX, double newY, double newZ) {
+  switch(mode) {
+    case GCODE_FEED_INVTIME:
+      /* Whole distance in 1/F minutes, i.e. move at (distance * F) mm/min */
+      F *= sqrt(pow(newX - oldX, 2) + pow(newY - oldY, 2) +
+                pow(newZ - oldZ, 2));
+      break;
+    case GCODE_FEED_PERREVOLUTION:
+      /* F mm per revolution, i.e. move at (S * F) mm/min */
+      F *= spindleSpeed;
+      break;
+    case GCODE_FEED_PERMINUTE:
+      /* F mm/min, i.e. already in the right format */
+      /* NOP */
+      break;
+  }
+
+  return F;
+}
+
 bool init_machine(void *data) {
   machineX = machineY = machineZ = noMirrorX = noMirrorY = beforeHomeX =
       beforeHomeY = beforeHomeZ = 0.0;
@@ -49,7 +70,7 @@ bool init_machine(void *data) {
 }
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
-    uint16_t F) {
+    double F) {
   double oldX = machineX, oldY = machineY, oldZ = machineZ;
 
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
@@ -69,28 +90,11 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
     GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", machineX,
                 machineY, machineZ)
-  else {
-    switch(feedMode) {
-      case GCODE_FEED_INVTIME:
-        /* Whole distance in 1/F minutes, i.e. move at (distance * F) mm/min */
-        //TODO: allow floating point values for F for this use case
-        F *= sqrt(pow(machineX - oldX, 2) + pow(machineY - oldY, 2) +
-                  pow(machineZ - oldZ, 2));
-        break;
-      case GCODE_FEED_PERREVOLUTION:
-        /* F mm per revolution, i.e. move at (S * F) mm/min */
-        //TODO: allow floating point values for F for this use case
-        F *= spindleSpeed;
-        break;
-      case GCODE_FEED_PERMINUTE:
-        /* F mm/min, i.e. already in the right format */
-        /* NOP */
-        break;
-    }
-
-    GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
-                machineX, machineY, machineZ, F);
-  }
+  else
+    GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4.0fmm/min",
+                machineX, machineY, machineZ,
+                _adjust_feed(feedMode, F, oldX, oldY, oldZ, machineX, machineY,
+                             machineZ));
   GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
 
   return true;
@@ -98,11 +102,12 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
 
 bool move_machine_arc(double X, double Y, double Z, double I, double J,
     double K, double R, bool ccw, TGCodePlaneMode plane,
-    TGCodeFeedMode feedMode, uint16_t F) {
+    TGCodeFeedMode feedMode, double F) {
+  bool theLongWay = false;
+
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
     return false;
 
-  bool theLongWay = false;
   /* Use the >180deg arc on user request */
   if(!isnan(R) && signbit(R)) {
     theLongWay = true;
@@ -170,11 +175,12 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
       break;
   }
 
-  GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4dmm/min",
+  GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4.0fmm/min",
               machineX + I, machineY + J, machineZ + K, R,
               (plane == GCODE_PLANE_XY ? "XY" :
                   (plane == GCODE_PLANE_ZX ? "ZX" : "YZ")),
-              (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, F);
+              (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z,
+              _adjust_feed(feedMode, F, machineX, machineY, machineZ, X, Y, Z));
   machineX = X;
   machineY = Y;
   machineZ = Z;
