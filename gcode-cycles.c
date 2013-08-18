@@ -96,11 +96,11 @@ char *generate_cycles(TGCodeState state) {
 
   if(state.system.absolute == GCODE_RELATIVE) {
     //Compute the previous Z relative to R in case we're in G98
-    precZ = 0 - state.R;
+    precZ = -state.R;
 
     //Z is relative to current position, R was relative to the previous
     //position and needs to be made relative to Z
-    state.R = 0 - state.system.cZ;
+    state.R = -state.system.cZ;
   } else
     //Reverse engineer the previous Z in case we're in G98
     precZ = state.system.gZ - (
@@ -166,33 +166,34 @@ char *generate_cycles(TGCodeState state) {
         feedRetract = false;
         break;
       case GCODE_CYCLE_BORING_BACK:
-        _add_generated_line("G00 X%4.2f Y%4.2f\n", state.I, state.J);
+        _add_generated_line("G91 G00 X%4.2f Y%4.2f\n", state.I, state.J);
         _add_generated_line("M05\n");
         _add_generated_line("M19\n");
-        _add_generated_line("G00 Z%4.2f\n", state.system.cZ);
+        _add_generated_line("G%02d G00 Z%4.2f\n", state.system.absolute,
+                            state.system.cZ);
         _add_generated_line("G00 X%4.2f Y%4.2f\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cX : -1 * state.I),
+                                state.system.cX : -state.I),
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cY : -1 * state.J));
+                                state.system.cY : -state.J));
         //TODO: make it start in the same direction it was turning before
         _add_generated_line("M03\n");
         _add_generated_line("G01 Z%4.2f\n", state.K);
         _add_generated_line("G01 Z%4.2f\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cZ : -1 * state.K));
+                                state.system.cZ : -state.K));
         _add_generated_line("M05\n");
         _add_generated_line("M19\n");
-        _add_generated_line("G00 X%4.2f Y%4.2f\n", state.I, state.J);
-        feedRetract = false;
+        _add_generated_line("G91 G00 X%4.2f Y%4.2f\n", state.I, state.J);
         /* This does the final move here: we need it in order to satisfy the
          * condition that every cycle ends in the same spot it started */
-        _add_generated_line("G%02d Z%4.2f\n", (int)feedRetract, state.R);
+        _add_generated_line("G%02d G00 Z%4.2f\n", state.system.absolute,
+                            state.R);
         _add_generated_line("G00 X%4.2f Y%4.2f\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cX : -1 * state.I),
+                                state.system.cX : -state.I),
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cY : -1 * state.J));
+                                state.system.cY : -state.J));
         //TODO: make it start in the same direction it was turning before
         _add_generated_line("M03\n");
         break;
@@ -204,7 +205,7 @@ char *generate_cycles(TGCodeState state) {
 
   /* Retract to last Z if in G98 */
   if(state.retractMode == GCODE_RETRACT_LAST)
-    _add_generated_line("G%02d Z%4.2f\n", (int)false, precZ);
+    _add_generated_line("G00 Z%4.2f\n", precZ);
 
   /* Any extras ? */
   if(state.cycle == GCODE_CYCLE_BORING_WD_WS ||
