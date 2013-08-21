@@ -15,6 +15,7 @@
 #include "gcode-commons.h"
 #include "gcode-parameters.h"
 #include "gcode-debugcon.h"
+#include "gcode-machine.h"
 
 
 typedef struct {
@@ -74,7 +75,11 @@ bool update_parameter(uint16_t index, double newValue) {
     parameterUpdates[parameterUpdateCount - 1].value = newValue;
 
     return true;
-  } else return false;
+  } else {
+    display_machine_message("PER: Parameter update buffer overflow!");
+
+    return false;
+  }
 }
 
 bool set_parameter(uint16_t index, double newValue) {
@@ -103,7 +108,7 @@ bool done_parameters(void) {
   int i, j = 0;
 
   parameterStore = freopen(GCODE_PARAMETER_STORE, "w", parameterStore);
-  for(i = 500 - 1; i < GCODE_PARAMETER_COUNT; i++)
+  for(i = 500; i < GCODE_PARAMETER_COUNT; i++)
     if(!(parameters[i] < 0.0001) || !(parameters[i] > -0.0001)) {
       fprintf(parameterStore, "%4d,%4.2f\n", i, parameters[i]);
       j++;
