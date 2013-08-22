@@ -678,6 +678,7 @@ bool update_gcode_state(char *line) {
   return true;
 }
 
+/* This handles using a parameter in lieu of a numeric value transparently */
 uint32_t read_gcode_integer(char *line) {
   if(line[0] == '#')
     return (uint32_t)fetch_parameter(read_gcode_integer(&line[1]));
@@ -697,6 +698,7 @@ uint32_t read_gcode_integer(char *line) {
   }
 }
 
+/* This handles using a parameter in lieu of a numeric value transparently */
 double read_gcode_real(char *line) {
   if(line[0] == '#') return fetch_parameter(read_gcode_integer(&line[1]));
   else {
@@ -774,23 +776,26 @@ uint32_t get_gcode_word_integer_default(char word, uint32_t defVal) {
   else return tmp;
 }
 
+/* This handles parameter assignments */
 bool process_gcode_parameters(void) {
   char *cchr;
   uint16_t param;
   double value = NAN;
 
-  // Is there any work for us to do?
+  /* Is there any work for us to do? */
   if(have_gcode_word('=', 0) && have_gcode_word('#', 0)) {
-    // Potentially ... (we could have something like "G01 X#12 Y[3=2]")
+    // Potentially ... (we could have something like "G01 X#12 #3=2")
     // We cannot make use of read_gcode_* because we could have multiple
     // occurrences of "#"
     // The last have_gcode_word() call left parseCache.at pointing at the
     // first parameter reference, that's where we begin
     cchr = parseCache.at;
     while(*cchr) {
+      /* This is parameter-aware, indirection "just works" */
       param = read_gcode_integer(&cchr[1]);
       cchr = _skip_gcode_digits(&cchr[1]);
       if(*cchr == '=') { // Is this an assignment?
+        /* This is also parameter-aware, indirection "just works" */
         value = read_gcode_real(&cchr[1]);
         cchr = _skip_gcode_digits(&cchr[1]);
         update_parameter(param, value);

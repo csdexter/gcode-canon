@@ -39,7 +39,8 @@ char fetch_char_input(void);
 /* Fetch a complete line of input, stripped of whitespace, comments and \n;
  * returns false if there's no more input to read.
  * Call with NULL if you don't care about the line's program contents and only
- * want to detect syntax errors. */
+ * want to detect syntax errors.
+ * line[] is assumed to be at most 256 characters long. */
 bool fetch_line_input(char *line);
 /* Where does O<n> start? */
 long get_program_input(uint16_t program);

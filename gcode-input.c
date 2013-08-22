@@ -21,6 +21,7 @@
 #include "gcode-input.h"
 #include "gcode-debugcon.h"
 #include "gcode-machine.h"
+#include "gcode-expression.h"
 
 
 static FILE *input;
@@ -83,21 +84,28 @@ char fetch_char_input(void) {
   }
 }
 
+/* NOTE: when in spliced mode, this does not change content retrieved in the
+ * future as ungetc() does, only moves the virtual file pointer backwards */
+void push_char_input(unsigned char c) {
+  if(spliced && splicep) splicep--;
+  else ungetc(c, input);
+}
+
 bool fetch_line_input(char *line) {
   int c = '\0';
-  uint8_t i = 0, j;
+  uint8_t i = 0, j, l;
   bool ignore = false;
   char commsg[0xFF - 5]; /* max line length - 2 parentheses and "MSG" */
 
   while(c != EOF) {
     c = toupper(fetch_char_input());
-
+    //TODO: re-write as switch(c)
     if(c == '\n' || c == '\r') {
       ignore = false;
 
       if(c == '\r') {
         c = fetch_char_input();
-        if(c != '\n') ungetc(c, input);
+        if(c != '\n') push_char_input(c);
       }
 
       if(i) break; /* EOL with data: return line */
@@ -134,14 +142,15 @@ bool fetch_line_input(char *line) {
       if(i) display_machine_message("WAR: N or O word not at start of block!");
 
       j = 0;
-      /* read the number, which should be a literal integer */
+      /* read the number, which should be a literal integer, since O and N do
+       * not support parameter indirection */
       d = fetch_char_input();
       while(isdigit(d)) {
         commsg[j++] = d;
         d = fetch_char_input();
       }
       commsg[j] = '\0';
-      ungetc(d, input); /* First non-digit character has to go back */
+      push_char_input(d); /* First non-digit character has to go back */
 
       if(c == 'O') {/* We ignore N and store a bookmark for O for now */
         if(programCount < GCODE_PROGRAM_CAPACITY) {
@@ -157,6 +166,30 @@ bool fetch_line_input(char *line) {
 
       continue;
     }
+
+    if(c == '[') { /* Evaluate expressions before any other processing */
+      j = 0;
+      l = 0;
+      c = fetch_char_input();
+      while(c != ']' && !l) {
+        commsg[j++] = c;
+        if(c == '[') l++; /* Handle nested brackets properly */
+        if(c == ']') l--;
+        c = fetch_char_input();
+      }
+      commsg[j] = '\0';
+
+      i += snprintf(&line[i], 0xFF - i, "%4.2f", evaluate_expression(commsg));
+
+      continue;
+    }
+
+    /* By this time, the whole line should be in the following format:
+     * <letter><numeric value><letter><numeric value> ...
+     * Any violations thereof in the form of <letter><letter> ... are names of
+     * functions which should also be evaluated.
+     */
+    //TODO: implement predefined functions
 
     if(line) line[i++] = c; /* Otherwise add to the line buffer */
   }
