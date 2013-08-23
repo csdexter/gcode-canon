@@ -143,7 +143,7 @@ static bool _refresh_gcode_parse_cache(char word) {
 
 /* Used to jump over parameters and their arguments after being processed.
  * Handles the corner case of having to jump over things like "#-10.23" */
-static char *_skip_gcode_digits(char *string) {
+char *skip_gcode_digits(char *string) {
   switch(*string) {
     case '+':
     case '-':
@@ -686,7 +686,7 @@ uint32_t read_gcode_integer(char *line) {
     char saveChar = '\0', *savePtr;
     uint32_t result;
 
-    savePtr = _skip_gcode_digits(line);
+    savePtr = skip_gcode_digits(line);
     if(*savePtr) {
       saveChar = *savePtr;
       *savePtr = '\0';
@@ -705,7 +705,7 @@ double read_gcode_real(char *line) {
     char saveChar = '\0', *savePtr;
     double result;
 
-    savePtr = _skip_gcode_digits(line);
+    savePtr = skip_gcode_digits(line);
     if(*savePtr) {
       saveChar = *savePtr;
       *savePtr = '\0';
@@ -793,11 +793,11 @@ bool process_gcode_parameters(void) {
     while(*cchr) {
       /* This is parameter-aware, indirection "just works" */
       param = read_gcode_integer(&cchr[1]);
-      cchr = _skip_gcode_digits(&cchr[1]);
+      cchr = skip_gcode_digits(&cchr[1]);
       if(*cchr == '=') { // Is this an assignment?
         /* This is also parameter-aware, indirection "just works" */
         value = read_gcode_real(&cchr[1]);
-        cchr = _skip_gcode_digits(&cchr[1]);
+        cchr = skip_gcode_digits(&cchr[1]);
         update_parameter(param, value);
       } else cchr = strchr(cchr, '#'); // No, move on to the next parameter
     }

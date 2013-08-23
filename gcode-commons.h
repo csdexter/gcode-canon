@@ -54,7 +54,8 @@
 #define GCODE_SUBPROGRAM_COUNT 16
 
 /* Handy for trigonometry */
-#define GCODE_DEG2RAD 0.0174532925
+#define GCODE_DEG2RAD 0.0174532925199
+#define GCODE_RAD2DEG 57.2957795131
 /* Handy for measurements */
 #define GCODE_INCH2MM 25.4
 

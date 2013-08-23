@@ -275,6 +275,9 @@ typedef struct {
 bool init_gcode_state(void *data);
 /* Process one line of G-Code. Note that line has already been sanitized by
  * gcode-input. Returns false on error */
+/* Returns string pointing at the first non-numeric-value character after the
+ * initial pointer value. */
+char *skip_gcode_digits(char *string);
 bool update_gcode_state(char *line);
 /* Read from line and interpret as number transparently handling parameter
  * references; return number */

@@ -99,7 +99,7 @@ bool fetch_line_input(char *line) {
 
   while(c != EOF) {
     c = toupper(fetch_char_input());
-    //TODO: re-write as switch(c)
+
     if(c == '\n' || c == '\r') {
       ignore = false;
 
@@ -179,21 +179,19 @@ bool fetch_line_input(char *line) {
       }
       commsg[j] = '\0';
 
-      i += snprintf(&line[i], 0xFF - i, "%4.2f", evaluate_expression(commsg));
+      if(line)
+        i += snprintf(&line[i], 0xFF - i, "%4.2f", evaluate_expression(commsg));
 
       continue;
     }
 
-    /* By this time, the whole line should be in the following format:
-     * <letter><numeric value><letter><numeric value> ...
-     * Any violations thereof in the form of <letter><letter> ... are names of
-     * functions which should also be evaluated.
-     */
-    //TODO: implement predefined functions
-
     if(line) line[i++] = c; /* Otherwise add to the line buffer */
   }
-  if(line) line[i] = '\0';
+
+  if(line) {
+    line[i] = '\0';
+    evaluate_unary_expression(line);
+  }
 
   return c == EOF ? false : true;
 }
