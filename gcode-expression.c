@@ -112,47 +112,52 @@ static char *_next_token(char *expression, TGCodeExpressionToken *token) {
       token->tType = GCODE_ETT_CLOSE;
       break;
     case '-':
+      /* Some people write 10-+3, just to fool with us */
+      if(*expression == '+') expression++;
       token->tType = GCODE_ETT_OPERATOR;
       token->tOperator.oType = GCODE_EO_MINUS;
       break;
     case '+':
       token->tType = GCODE_ETT_OPERATOR;
-      token->tOperator.oType = GCODE_EO_PLUS;
+      /* Some people write 12+-1, just to fool with us */
+      if(*expression == '-') {
+        expression++;
+        token->tOperator.oType = GCODE_EO_MINUS;
+      } else token->tOperator.oType = GCODE_EO_PLUS;
       break;
     case '*':
       token->tType = GCODE_ETT_OPERATOR;
       if(*expression == '*') {
         token->tOperator.oType = GCODE_EO_POWER;
         expression++;
-      }
-      token->tOperator.oType = GCODE_EO_STAR;
+      } else token->tOperator.oType = GCODE_EO_STAR;
       break;
     case '/':
       token->tType = GCODE_ETT_OPERATOR;
       token->tOperator.oType = GCODE_EO_SLASH;
       break;
     case 'A':
-      if(strncasecmp(expression - 1, "ABS", strlen("ABS"))) {
+      if(!strncasecmp(expression - 1, "ABS", strlen("ABS"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("ABS"); /* Eat the opening bracket as well */
         token->tValue = _do_function("ABS", _do_expression(&expression), 0.0);
       }
-      else if(strncasecmp(expression - 1, "ACOS", strlen("ACOS"))) {
+      else if(!strncasecmp(expression - 1, "ACOS", strlen("ACOS"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("ACOS"); /* Eat the opening bracket as well */
         token->tValue = _do_function("ACOS", _do_expression(&expression), 0.0);
       }
-      else if(strncasecmp(expression - 1, "AND", strlen("AND"))) {
+      else if(!strncasecmp(expression - 1, "AND", strlen("AND"))) {
         token->tType = GCODE_ETT_OPERATOR;
         token->tOperator.oType = GCODE_EO_AND;
         expression += strlen("AND") - 1;
       }
-      else if(strncasecmp(expression - 1, "ASIN", strlen("ASIN"))) {
+      else if(!strncasecmp(expression - 1, "ASIN", strlen("ASIN"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("ASIN"); /* Eat the opening bracket as well */
-        token->tValue = _do_function("ACOS", _do_expression(&expression), 0.0);
+        token->tValue = _do_function("ASIN", _do_expression(&expression), 0.0);
       }
-      else if(strncasecmp(expression - 1, "ATAN", strlen("ATAN"))) {
+      else if(!strncasecmp(expression - 1, "ATAN", strlen("ATAN"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("ATAN"); /* Eat the opening bracket as well */
         arg1 = _do_expression(&expression); /* Enforce order of evaluation */
@@ -164,80 +169,80 @@ static char *_next_token(char *expression, TGCodeExpressionToken *token) {
       }
       break;
     case 'C':
-      if(strncasecmp(expression - 1, "COS", strlen("COS"))) {
+      if(!strncasecmp(expression - 1, "COS", strlen("COS"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("COS"); /* Eat the opening bracket as well */
         token->tValue = _do_function("COS", _do_expression(&expression), 0.0);
       }
       break;
     case 'E':
-      if(strncasecmp(expression - 1, "EXP", strlen("EXP"))) {
+      if(!strncasecmp(expression - 1, "EXP", strlen("EXP"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("EXP"); /* Eat the opening bracket as well */
         token->tValue = _do_function("EXP", _do_expression(&expression), 0.0);
       }
       break;
     case 'F':
-      if(strncasecmp(expression - 1, "FIX", strlen("FIX"))) {
+      if(!strncasecmp(expression - 1, "FIX", strlen("FIX"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("FIX"); /* Eat the opening bracket as well */
         token->tValue = _do_function("FIX", _do_expression(&expression), 0.0);
       }
-      else if(strncasecmp(expression - 1, "FUP", strlen("FUP"))) {
+      else if(!strncasecmp(expression - 1, "FUP", strlen("FUP"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("FUP"); /* Eat the opening bracket as well */
         token->tValue = _do_function("FUP", _do_expression(&expression), 0.0);
       }
       break;
     case 'L':
-      if(strncasecmp(expression - 1, "LN", strlen("LN"))) {
+      if(!strncasecmp(expression - 1, "LN", strlen("LN"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("LN"); /* Eat the opening bracket as well */
         token->tValue = _do_function("LN", _do_expression(&expression), 0.0);
       }
       break;
     case 'M':
-      if(strncasecmp(expression - 1, "MOD", strlen("MOD"))) {
+      if(!strncasecmp(expression - 1, "MOD", strlen("MOD"))) {
         token->tType = GCODE_ETT_OPERATOR;
         token->tOperator.oType = GCODE_EO_MOD;
         expression += strlen("MOD") - 1;
       }
       break;
     case 'O':
-      if(strncasecmp(expression - 1, "OR", strlen("OR"))) {
+      if(!strncasecmp(expression - 1, "OR", strlen("OR"))) {
         token->tType = GCODE_ETT_OPERATOR;
         token->tOperator.oType = GCODE_EO_OR;
         expression += strlen("OR") - 1;
       }
       break;
     case 'R':
-      if(strncasecmp(expression - 1, "ROUND", strlen("ROUND"))) {
+      if(!strncasecmp(expression - 1, "ROUND", strlen("ROUND"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("ROUND"); /* Eat the opening bracket as well */
         token->tValue = _do_function("ROUND", _do_expression(&expression), 0.0);
       }
       break;
     case 'S':
-      if(strncasecmp(expression - 1, "SIN", strlen("SIN"))) {
+      if(!strncasecmp(expression - 1, "SIN", strlen("SIN"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("SIN"); /* Eat the opening bracket as well */
         token->tValue = _do_function("SIN", _do_expression(&expression), 0.0);
       }
-      else if(strncasecmp(expression - 1, "SQRT", strlen("SQRT"))) {
+      else if(!strncasecmp(expression - 1, "SQRT", strlen("SQRT"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("SQRT"); /* Eat the opening bracket as well */
         token->tValue = _do_function("SQRT", _do_expression(&expression), 0.0);
       }
       break;
     case 'T':
-      if(strncasecmp(expression - 1, "TAN", strlen("TAN"))) {
+      if(!strncasecmp(expression - 1, "TAN", strlen("TAN"))) {
         token->tType = GCODE_ETT_VALUE;
         expression += strlen("TAN"); /* Eat the opening bracket as well */
         token->tValue = _do_function("TAN", _do_expression(&expression), 0.0);
       }
       break;
     case 'X':
-      if(strncasecmp(expression - 1, "XOR", strlen("XOR"))) {
+      if(!strncasecmp(expression - 1, "XOR", strlen("XOR"))) {
         token->tType = GCODE_ETT_OPERATOR;
         token->tOperator.oType = GCODE_EO_XOR;
         expression += strlen("XOR") - 1;
@@ -288,7 +293,7 @@ static double _do_expression(char **expression) {
   TGCodeExpressionOperator operator = {GCODE_EO_PLUS,
                                        operatorPrecedence[GCODE_EO_PLUS]};
   bool skipOp = false, skipRight = false;
-  char *subexp = NULL;
+  char *subexp = NULL, *tep;
 
   /* First argument */
   *expression = _next_token(*expression, &token);
@@ -308,6 +313,9 @@ static double _do_expression(char **expression) {
       left = token.tValue;
       break;
   }
+
+   /* Special case of a single value in brackets */
+  if(!**expression) return left;
 
   while(**expression) {
     /* Save where right began, we may need to yield it */
@@ -350,10 +358,13 @@ static double _do_expression(char **expression) {
 
     /* By this time, we have left, operator and right set properly. We should
      * now peek at the next token and decide what to do next. */
-    _next_token(*expression, &token);
+    tep = _next_token(*expression, &token);
     /* If this is the end of the expression, we're done */
-    if(token.tType == GCODE_ETT_CLOSE)
+    if(token.tType == GCODE_ETT_CLOSE) {
+      *expression = tep;
+
       return _do_operation(operator, left, right);
+    }
     /* If we're followed by an operation of a higher precedence, yield */
     if((token.tType == GCODE_ETT_OPERATOR &&
         token.tOperator.oPrec > operator.oPrec) ||
@@ -378,19 +389,20 @@ double evaluate_expression(char *expression) {
 
 void evaluate_unary_expression(char *line) {
   bool seenWord = false;
-  char fname[strlen("ROUND") + 1], *sptr, *buf; /* longest named function */
+  char fname[strlen("ROUND") + 1], *sptr, *buf, c; /* longest named function */
   uint8_t fni;
   double arg, sar;
 
-  while(*(line++)) {
-    if(isdigit(*line) && seenWord) {
+  while(c = *(line++)) {
+    if((isdigit(c) || c == '-') && seenWord) {
       line = skip_gcode_digits(line);
       seenWord = false;
     }
-    if(isalpha(*line)) {
+    if(isalpha(c)) {
       if(seenWord) {
-        sptr = line; /* Remember where it started */
+        sptr = line - 1; /* Remember where it started */
         fni = 0;
+        line--;
         do { fname[fni++] = *line; } while (isalpha(*(++line)));
         fname[fni] = '\0'; /* Function name at fname */
         arg = read_gcode_real(line); /* Function (1st) argument in arg */
@@ -401,7 +413,7 @@ void evaluate_unary_expression(char *line) {
         }
 
         buf = (char *)calloc(1, strlen(line) + strlen("4.2f") + 1);
-        strcpy(buf, "4.2f");
+        strcpy(buf, "%4.2f");
         strcat(buf, line); /* Save the rest of the line */
         line = sptr; /* Rewind to where the function started */
         /* Overwrite with numeric result */

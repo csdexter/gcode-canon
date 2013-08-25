@@ -136,10 +136,8 @@ bool fetch_line_input(char *line) {
       continue;
     }
 
-    if(c == 'N' || c == 'O') {
+    if((c == 'N' || c == 'O') && !i) {
       int d;
-
-      if(i) display_machine_message("WAR: N or O word not at start of block!");
 
       j = 0;
       /* read the number, which should be a literal integer, since O and N do
@@ -171,10 +169,13 @@ bool fetch_line_input(char *line) {
       j = 0;
       l = 0;
       c = fetch_char_input();
-      while(c != ']' && !l) {
-        commsg[j++] = c;
-        if(c == '[') l++; /* Handle nested brackets properly */
-        if(c == ']') l--;
+      while(!(c == ']' && !l)) {
+        /* Strip whitespace */
+        if(!(c == ' ' || c == '\t')) {
+          commsg[j++] = c;
+          if(c == '[') l++; /* Handle nested brackets properly */
+          if(c == ']') l--;
+        }
         c = fetch_char_input();
       }
       commsg[j] = '\0';

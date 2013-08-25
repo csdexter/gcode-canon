@@ -792,7 +792,7 @@ bool process_gcode_parameters(void) {
     // The last have_gcode_word() call left parseCache.at pointing at the
     // first parameter reference, that's where we begin
     cchr = parseCache.at;
-    while(*cchr) {
+    while(cchr) {
       /* This is parameter-aware, indirection "just works" */
       param = read_gcode_integer(&cchr[1]);
       cchr = skip_gcode_digits(&cchr[1]);
