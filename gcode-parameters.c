@@ -110,7 +110,7 @@ bool done_parameters(void) {
   parameterStore = freopen(GCODE_PARAMETER_STORE, "w", parameterStore);
   for(i = 500; i < GCODE_PARAMETER_COUNT; i++)
     if(!(parameters[i] < 0.0001) || !(parameters[i] > -0.0001)) {
-      fprintf(parameterStore, "%4d,%4.2f\n", i, parameters[i]);
+      fprintf(parameterStore, "%4d," GCODE_REAL_FORMAT "\n", i, parameters[i]);
       j++;
     }
   GCODE_DEBUG("Saved %d non-null parameter values to non-volatile storage for shutdown", j);

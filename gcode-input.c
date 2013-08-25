@@ -181,7 +181,8 @@ bool fetch_line_input(char *line) {
       commsg[j] = '\0';
 
       if(line)
-        i += snprintf(&line[i], 0xFF - i, "%4.2f", evaluate_expression(commsg));
+        i += snprintf(&line[i], 0xFF - i, GCODE_REAL_FORMAT,
+                      evaluate_expression(commsg));
 
       continue;
     }

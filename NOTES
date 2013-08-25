@@ -5,7 +5,6 @@
 * only three axes (no A,B,C)
 * arc I,J,K are *always* relative to the arc starting point
 * machine display/conceptual precision is 10um
-* all display and save/restore of doubles is in %4.2f format
 * integers must be integers, no G00.0000000 garbage.
 * surprisingly, gcode-machine should poll overrides and dynamically apply any
   changes.

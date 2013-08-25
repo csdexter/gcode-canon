@@ -91,7 +91,7 @@ char *generate_cycles(TGCodeState state) {
   /* Preparatory move (singleton, only if Z below R) */
   do_WCS_move_math(&state.system, NAN, NAN, state.R);
   if(state.system.Z > preZ)
-    _add_generated_line("G00 Z%4.2f\n", state.R);
+    _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", state.R);
   state.system.Z = preZ;
   state.system.gZ = pregZ;
 
@@ -115,9 +115,10 @@ char *generate_cycles(TGCodeState state) {
   /* Repetitions */
   while(state.L--) {
     /* First preparatory move */
-    _add_generated_line("G00 X%4.2f Y%4.2f\n", state.system.cX, state.system.cY);
+    _add_generated_line("G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
+                        state.system.cX, state.system.cY);
     /* Second preparatory move */
-    _add_generated_line("G00 Z%4.2f\n", state.R);
+    _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", state.R);
     /* Actual canned cycle */
     switch(state.cycle) {
       case GCODE_CYCLE_DRILL_ND:
@@ -126,12 +127,12 @@ char *generate_cycles(TGCodeState state) {
       case GCODE_CYCLE_BORING_WD_WS:
       case GCODE_CYCLE_BORING_MANUAL:
       case GCODE_CYCLE_BORING_WD_NS:
-        _add_generated_line("G01 Z%4.2f\n", state.system.cZ);
+        _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n", state.system.cZ);
         if(state.cycle == GCODE_CYCLE_DRILL_WD ||
            state.cycle == GCODE_CYCLE_BORING_WD_WS ||
            state.cycle == GCODE_CYCLE_BORING_MANUAL ||
            state.cycle == GCODE_CYCLE_BORING_WD_NS)
-          _add_generated_line("G04 P%4.2f\n", state.P);
+          _add_generated_line("G04 P" GCODE_REAL_FORMAT "\n", state.P);
         if(state.cycle == GCODE_CYCLE_BORING_WD_WS ||
            state.cycle == GCODE_CYCLE_BORING_MANUAL)
           _add_generated_line("M05\n");
@@ -146,51 +147,54 @@ char *generate_cycles(TGCodeState state) {
       case GCODE_CYCLE_TAP_LH:
       case GCODE_CYCLE_TAP_RH:
         /* Stop spindle, disable overrides, per revolution */
-        _add_generated_line("M05 M49 G95 F%4.2f\n", state.K);
+        _add_generated_line("M05 M49 G95 F" GCODE_REAL_FORMAT "\n", state.K);
         /* Start spindle, exact stop check, feed in */
-        _add_generated_line("M%02d G09 G01 Z%4.2f\n",
+        _add_generated_line("M%02d G09 G01 Z" GCODE_REAL_FORMAT "\n",
                             (state.cycle == GCODE_CYCLE_TAP_LH ? 4 : 3),
                             state.system.cZ);
         /* Spindle will stop at end of move, but better safe than sorry */
         _add_generated_line("M05\n");
         /* Reverse spindle, exact stop check, feed out */
-        _add_generated_line("M%02d G09 G01 Z%4.2f\n",
+        _add_generated_line("M%02d G09 G01 Z" GCODE_REAL_FORMAT "\n",
                             (state.cycle == GCODE_CYCLE_TAP_RH ? 4 : 3),
                             state.R);
         /* Spindle will stop at end of move, but better safe than sorry */
         _add_generated_line("M05\n");
         /* Restore feed mode and value, enable overrides */
-        _add_generated_line("G%2d M48 F%4.2f\n", state.feedMode, state.F);
+        _add_generated_line("G%2d M48 F" GCODE_REAL_FORMAT "\n",
+                            state.feedMode, state.F);
         /* Start spindle */
         _add_generated_line("M%02d\n",
                             (state.cycle == GCODE_CYCLE_TAP_LH ? 4 : 3));
         feedRetract = false;
         break;
       case GCODE_CYCLE_BORING_BACK:
-        _add_generated_line("G91 G00 X%4.2f Y%4.2f\n", state.I, state.J);
+        _add_generated_line("G91 G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
+                            state.I, state.J);
         _add_generated_line("M05\n");
         _add_generated_line("M19\n");
-        _add_generated_line("G%02d G00 Z%4.2f\n", state.system.absolute,
-                            state.system.cZ);
-        _add_generated_line("G00 X%4.2f Y%4.2f\n",
+        _add_generated_line("G%02d G00 Z" GCODE_REAL_FORMAT "\n",
+                            state.system.absolute, state.system.cZ);
+        _add_generated_line("G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
                                 state.system.cX : -state.I),
                             (state.system.absolute == GCODE_ABSOLUTE ?
                                 state.system.cY : -state.J));
         //TODO: make it start in the same direction it was turning before
         _add_generated_line("M03\n");
-        _add_generated_line("G01 Z%4.2f\n", state.K);
-        _add_generated_line("G01 Z%4.2f\n",
+        _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n", state.K);
+        _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
                                 state.system.cZ : -state.K));
         _add_generated_line("M05\n");
         _add_generated_line("M19\n");
-        _add_generated_line("G91 G00 X%4.2f Y%4.2f\n", state.I, state.J);
+        _add_generated_line("G91 G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
+                            state.I, state.J);
         /* This does the final move here: we need it in order to satisfy the
          * condition that every cycle ends in the same spot it started */
-        _add_generated_line("G%02d G00 Z%4.2f\n", state.system.absolute,
-                            state.R);
-        _add_generated_line("G00 X%4.2f Y%4.2f\n",
+        _add_generated_line("G%02d G00 Z" GCODE_REAL_FORMAT "\n",
+                            state.system.absolute, state.R);
+        _add_generated_line("G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
                                 state.system.cX : -state.I),
                             (state.system.absolute == GCODE_ABSOLUTE ?
@@ -214,22 +218,23 @@ char *generate_cycles(TGCodeState state) {
         /* Perform the pecks */
         while(peckSteps--) {
           /* Z goes down, so feed by -Q in relative mode */
-          _add_generated_line("G91 G01 Z%4.2f\n", -state.Q);
+          _add_generated_line("G91 G01 Z" GCODE_REAL_FORMAT "\n", -state.Q);
           if(state.cycle == GCODE_CYCLE_DRILL_PP)
             /* Partial retract: traverse up by +Q/2 */
-            _add_generated_line("G00 Z%4.2f\n", state.Q / 2);
+            _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", state.Q / 2);
           else {
             /* Full retract: traverse up to where we began, traverse down to
              * where we were before less Q/2 */
             howFarDown += state.Q;
-            _add_generated_line("G00 Z%4.2f\n", howFarDown);
-            _add_generated_line("G00 Z%4.2f\n", -(howFarDown - state.Q / 2));
+            _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", howFarDown);
+            _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n",
+                                -(howFarDown - state.Q / 2));
           }
-          _add_generated_line("G01 Z%4.2f\n", -(state.Q / 2));
+          _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n", -(state.Q / 2));
         }
         /* Still extraMove to go until we reach Z */
         if(fpclassify(extraMove) == FP_NORMAL)
-          _add_generated_line("G01 Z%4.2f\n", -extraMove);
+          _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n", -extraMove);
         /* Restore previous measurement mode */
         _add_generated_line("G%02d\n", state.system.absolute);
         feedRetract = false;
@@ -237,12 +242,13 @@ char *generate_cycles(TGCodeState state) {
     }
     /* Final move */
     if(state.cycle != GCODE_CYCLE_BORING_BACK)
-      _add_generated_line("G%02d Z%4.2f\n", (int)feedRetract, state.R);
+      _add_generated_line("G%02d Z" GCODE_REAL_FORMAT "\n", (int)feedRetract,
+                          state.R);
   }
 
   /* Retract to last Z if in G98 */
   if(state.retractMode == GCODE_RETRACT_LAST)
-    _add_generated_line("G00 Z%4.2f\n", precZ);
+    _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", precZ);
 
   /* Any extras ? */
   if(state.cycle == GCODE_CYCLE_BORING_WD_WS ||

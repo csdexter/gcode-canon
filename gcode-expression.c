@@ -413,7 +413,7 @@ void evaluate_unary_expression(char *line) {
         }
 
         buf = (char *)calloc(1, strlen(line) + strlen("4.2f") + 1);
-        strcpy(buf, "%4.2f");
+        strcpy(buf, GCODE_REAL_FORMAT);
         strcat(buf, line); /* Save the rest of the line */
         line = sptr; /* Rewind to where the function started */
         /* Overwrite with numeric result */

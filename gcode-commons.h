@@ -64,5 +64,6 @@
 #define GCODE_AXIS_Y 1
 #define GCODE_AXIS_Z 2
 
+#define GCODE_REAL_FORMAT "%4.4f"
 
 #endif /* GCODE_COMMONS_H_ */
