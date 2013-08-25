@@ -542,23 +542,25 @@ bool update_gcode_state(char *line) {
       case OFF:
         break;
       case ARC:
-        /* It's an arc or circle, fetch I,J,K,R */
-        currentGCodeState.I = to_metric_math(
-            currentGCodeState.system,
-            get_gcode_word_real_default('I', currentGCodeState.I));
-        currentGCodeState.J = to_metric_math(
-            currentGCodeState.system,
-            get_gcode_word_real_default('J', currentGCodeState.J));
-        currentGCodeState.K = to_metric_math(
-            currentGCodeState.system,
-            get_gcode_word_real_default('K', currentGCodeState.K));
-        currentGCodeState.R = to_metric_math(
-            currentGCodeState.system,
-            get_gcode_word_real_default('R', currentGCodeState.R));
-        break;
-      default:
+      case RAPID:
+      case LINEAR:
         do_WCS_move_math(&currentGCodeState.system, get_gcode_word_real('X'),
                          get_gcode_word_real('Y'), get_gcode_word_real('Z'));
+        if(currentGCodeState.motionMode == ARC) {
+          /* It's an arc or circle, fetch I,J,K,R */
+          currentGCodeState.I = to_metric_math(
+              currentGCodeState.system,
+              get_gcode_word_real_default('I', currentGCodeState.I));
+          currentGCodeState.J = to_metric_math(
+              currentGCodeState.system,
+              get_gcode_word_real_default('J', currentGCodeState.J));
+          currentGCodeState.K = to_metric_math(
+              currentGCodeState.system,
+              get_gcode_word_real_default('K', currentGCodeState.K));
+          currentGCodeState.R = to_metric_math(
+              currentGCodeState.system,
+              get_gcode_word_real_default('R', currentGCodeState.R));
+        }
         break;
     }
   } else currentGCodeState.axisWordsConsumed = false;
