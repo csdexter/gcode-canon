@@ -38,8 +38,8 @@ gcode-canon: $(OBJECTS)
 	$(CC) $(OBJECTS) -lm -o gcode-canon
 
 # We cannot run any tests for which we don't know the intended result
-%.nc:	%.out
 %.out:
-	echo "You're missing $@ for that test!"
-%.result:	%.nc
+	@echo "You're missing $@ (the intended result) for that test!"; exit 1
+
+%.result:	%.nc %.out
 	./gcode-canon $^ | egrep '^M(SG|POS)' > $@
