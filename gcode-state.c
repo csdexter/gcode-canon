@@ -389,7 +389,7 @@ bool update_gcode_state(char *line) {
                             GCODE_MODE_ARC_CW, GCODE_MODE_ARC_CCW,
                             GCODE_MODE_CIRCLE_CW, GCODE_MODE_CIRCLE_CCW))) {
     currentGCodeState.motionMode = _map_move_to_motion(arg, &currentGCodeState.ccw);
-    if(!(arg == GCODE_MOVE_RAPID || arg == GCODE_MOVE_FEED)) {
+    if(!(arg == (GCODE_MOVE_RAPID + 100) || arg == GCODE_MOVE_FEED)) {
       /* We just switched *to* arc interpolation, so start with sane values */
       currentGCodeState.I = currentGCodeState.J = currentGCodeState.K = 0.0;
       currentGCodeState.R = NAN;

@@ -37,7 +37,7 @@ static bool _add_generated_line(const char *format, ...) {
 
   if((strlen(slices[curSlice]) + strlen(slices[0])) >= GCODE_CYCLE_BUFSLICE) {
     if(curSlice < GCODE_CYCLE_MAXSLICES)
-      slices[curSlice++] = (char *)calloc(GCODE_CYCLE_BUFSLICE, 1);
+      slices[++curSlice] = (char *)calloc(GCODE_CYCLE_BUFSLICE, 1);
     else {
       display_machine_message("PER: Canned cycle injection buffer overflow!");
       return false;
