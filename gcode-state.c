@@ -459,9 +459,11 @@ bool update_gcode_state(char *line) {
           }
         }
         currentGCodeState.system.cX = get_gcode_word_real_default(
-            'X', currentGCodeState.system.cX);
+            'X', (currentGCodeState.system.absolute == GCODE_ABSOLUTE ?
+                  currentGCodeState.system.cX : 0));
         currentGCodeState.system.cY = get_gcode_word_real_default(
-            'Y', currentGCodeState.system.cY);
+            'Y', (currentGCodeState.system.absolute == GCODE_ABSOLUTE ?
+                  currentGCodeState.system.cY : 0));
         currentGCodeState.system.cZ = get_gcode_word_real_default(
             'Z', currentGCodeState.system.cZ);
         splice_input(generate_cycles(currentGCodeState));

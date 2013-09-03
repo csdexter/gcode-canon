@@ -67,6 +67,7 @@ static char *_build_cycle(void) {
   for(i = curSlice; i; i--) size += strlen(slices[i]);
   cycle = (char *)calloc(size + 1, 1);
   for(i = 1; i <= curSlice; i++) strncat(cycle, slices[i], size);
+  _reset_slices();
 
   return cycle;
 }
