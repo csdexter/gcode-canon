@@ -125,3 +125,190 @@ double to_metric_math(const TGCodeCoordinateInfo system, const double value) {
   if(isnan(value)) return value;
   else return (system.units == GCODE_UNITS_INCH ? value * GCODE_INCH2MM : value);
 }
+
+double current_or_last_math(double input, double last) {
+  if(isnan(input))
+    return last;
+  else
+    return input;
+}
+
+double relative_math(double input, double origin, bool absolute) {
+    if(absolute)
+      return input;
+    else
+      return input + origin;
+}
+
+double system_math(double input, bool MCS, double offset, double origin) {
+  if(MCS)
+    return input;
+  else
+    return origin + offset + input;
+}
+
+double length_comp_math(double input, TGCodeCompSpec comp) {
+  if(comp.mode == GCODE_COMP_LEN_OFF)
+    return input;
+  else
+    if(comp.mode == GCODE_COMP_LEN_P)
+      return input + comp.offset;
+    else
+      return input - comp.offset;
+}
+
+void radius_comp_math(double inputX, double inputY, TGCodeCompSpec comp,
+    bool side, double *X, double *Y) {
+  //TODO: proper implementation with proper math, this one's a dummy
+  if(comp.mode == GCODE_COMP_RAD_OFF) {
+    *X = inputX;
+    *Y = inputY;
+  } else
+    if(((comp.mode == GCODE_COMP_RAD_L) && side) ||
+       ((comp.mode == GCODE_COMP_RAD_R) && !side)) {
+      *X = inputX + comp.offset;
+      *Y = inputY + comp.offset;
+    } else {
+      *X = inputX - comp.offset;
+      *Y = inputY - comp.offset;
+    }
+}
+
+double inch_math(double input, bool inch) {
+  if(inch)
+    return input * GCODE_INCH2MM;
+  else
+    return input;
+}
+
+void polar_math(double radius, double theta, double *X, double *Y) {
+  *X = radius * cos(theta * GCODE_DEG2RAD);
+  *Y = radius * sin(theta * GCODE_DEG2RAD);
+}
+
+bool vector_side_math(double x1, double y1, double x2, double y2) {
+  //TODO: implement this properly, this is only a dummy
+
+  return true;
+}
+
+void rotation_math(double inputX, double inputY, double theta, double originX,
+    double originY, double *X, double *Y) {
+  *X = cos(theta * GCODE_DEG2RAD) * (inputX - originX) -
+      sin(theta * GCODE_DEG2RAD) * (inputY - originY) + originX;
+  *Y = sin(theta * GCODE_DEG2RAD) * (inputX - originX) +
+      cos(theta * GCODE_DEG2RAD) * (inputY - originY) + originY;
+}
+
+double scaling_math(double input, double origin, double factor) {
+  return origin + (input - origin) * factor;
+}
+
+void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
+  double oldcX, oldcY;
+  TGCodeAbsoluteMode oldAbsolute;
+  double newX, newY, newZ, newgX, newgY, newrX, newrY, newrZ;
+
+  system->cX = current_or_last_math(X, system->cX);
+  system->cY = current_or_last_math(Y, system->cY);
+  system->cZ = current_or_last_math(Z, system->cZ);
+  /* c[XYZ] now all contain non-NAN taken either from the current block or
+   * the previous word address value
+   *
+   * NOTE: this is the end of processing for c[XYZ]: they're meant to contain
+   *       the word address values from the last block */
+
+  if(system->cartesian == GCODE_POLAR) {
+    oldcX = system->cX;
+    oldcY = system->cY;
+    polar_math(system->cX, system->cY, &system->cX, &system->cY);
+    oldAbsolute = system->absolute;
+    system->absolute = GCODE_RELATIVE;
+    /* c[XY] now contain the Cartesian equivalent of what was specified in
+     * polar coordinates in the current block. Since polar coordinates always
+     * work in incremental mode, we temporarily change to that to match. */
+  }
+
+  /* we need the old g[XY] preserved to define the movement vector for radius
+   * compensation below */
+  newgX = relative_math(system->cX, system->gX,
+                        (system->absolute == GCODE_ABSOLUTE));
+  newgY = relative_math(system->cY, system->gY,
+                        (system->absolute == GCODE_ABSOLUTE));
+  system->gZ = relative_math(system->cZ, system->gZ,
+                             (system->absolute == GCODE_ABSOLUTE));
+  /* g[XYZ] now contain the relative-corrected version of c[XYZ] as specified
+   * in the current block or inferred from past state */
+
+  if(system->cartesian == GCODE_POLAR) {
+    /* Restore previous state and word address contents if we were in polar */
+    system->absolute = oldAbsolute;
+    system->cX = oldcX;
+    system->cY = oldcY;
+  }
+
+  newgX = system_math(
+      newgX, (system->current == GCODE_MCS), system->offset.X,
+      fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) *
+                      GCODE_PARM_WCS_SIZE + GCODE_AXIS_X));
+  newgY = system_math(
+      newgY, (system->current == GCODE_MCS), system->offset.Y,
+      fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) *
+                      GCODE_PARM_WCS_SIZE + GCODE_AXIS_Y));
+  system->gZ = system_math(
+      system->gZ, (system->current == GCODE_MCS), system->offset.Z,
+      fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) *
+                      GCODE_PARM_WCS_SIZE + GCODE_AXIS_Z));
+  /* g[XYZ] now contain the MCS-, WCS- and LCS- corrected version of their
+   * previous self */
+
+  radius_comp_math(newgX, newgY, system->radComp,
+                   vector_side_math(system->gX, system->gY, newgX, newgY),
+                   &system->gX, &system->gY);
+  system->gZ = length_comp_math(system->gZ, system->lenComp);
+  /* g[XYZ] now contain the length- and radius- compensated version of their
+   * previous self.
+   * NOTE: compensation is dimension-less, as per the standard.
+   * NOTE: this is the end of processing for g[XYZ]: they're meant to contain
+   *       the G-Code interpreter's idea of the current coordinates */
+
+  newX = inch_math(system->gX, (system->units == GCODE_UNITS_INCH));
+  newY = inch_math(system->gY, (system->units == GCODE_UNITS_INCH));
+  newZ = inch_math(system->gZ, (system->units == GCODE_UNITS_INCH));
+  /* new[XYZ] now contain g[XYZ] in machine units */
+
+  if(system->rotation.mode == GCODE_ROTATION_ON) {
+    switch(system->plane) {
+      case GCODE_PLANE_XY:
+        rotation_math(newX, newY, system->rotation.R, system->rotation.X,
+                      system->rotation.Y, &newrX, &newrY);
+        newrZ = newZ;
+        break;
+      case GCODE_PLANE_YZ:
+        rotation_math(newY, newZ, system->rotation.R, system->rotation.Y,
+                      system->rotation.Z, &newrY, &newrZ);
+        newrX = newX;
+        break;
+      case GCODE_PLANE_ZX:
+        rotation_math(newZ, newX, system->rotation.R, system->rotation.Z,
+                      system->rotation.X, &newrZ, &newrX);
+        newrY = newY;
+        break;
+    }
+  }
+  /* newr[XYZ] now contain the rotated version of new[XYZ] according to the
+   * current coordinate system rotation mode and parameters and active plane */
+
+  if(system->scaling.mode == GCODE_SCALING_ON) {
+    newX = scaling_math(newrX, system->scaling.X, system->scaling.I);
+    newY = scaling_math(newrX, system->scaling.Y, system->scaling.J);
+    newZ = scaling_math(newrX, system->scaling.Z, system->scaling.K);
+  }
+  /* new[XYZ] now contain the scaled version of newr[XYZ] according to the
+   * current scaling mode and parameters */
+
+  /* done, copy over to machine coordinates */
+  system->X = newX;
+  system->Y = newY;
+  system->Z = newZ;
+}
