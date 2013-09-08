@@ -84,34 +84,23 @@ bool init_cycles(void *data) {
 }
 
 char *generate_cycles(TGCodeState state) {
-  double preZ = state.system.Z, pregZ = state.system.gZ, precZ;
+  double preZ = state.system.Z, pregZ = state.system.gZ, precZ = state.system.cZ;
   bool feedRetract;
   uint16_t peckSteps;
   double extraMove, howFarDown = 0.0;
 
   /* Preparatory move (singleton, only if Z below R) */
-  do_WCS_move_math(&state.system, NAN, NAN, state.R);
+  move_math(&state.system, NAN, NAN, state.R);
   if(state.system.Z > preZ)
     _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", state.R);
   state.system.Z = preZ;
   state.system.gZ = pregZ;
+  state.system.cZ = precZ;
 
-  if(state.system.absolute == GCODE_RELATIVE) {
-    //Compute the previous Z relative to R in case we're in G98
-    precZ = -state.R;
-
+  if(state.system.absolute == GCODE_RELATIVE)
     //Z is relative to current position, R was relative to the previous
     //position and needs to be made relative to Z
     state.R = -state.system.cZ;
-  } else
-    //Reverse engineer the previous Z in case we're in G98
-    precZ = state.system.gZ - (
-        state.system.current == GCODE_MCS ?
-            0.0 :
-            fetch_parameter(
-                GCODE_PARM_FIRST_WCS +
-                (state.system.current - GCODE_WCS_1) *
-                GCODE_PARM_WCS_SIZE + GCODE_AXIS_Z) + state.system.offset.Z);
 
   /* Repetitions */
   while(state.L--) {
@@ -246,10 +235,6 @@ char *generate_cycles(TGCodeState state) {
       _add_generated_line("G%02d Z" GCODE_REAL_FORMAT "\n", (int)feedRetract,
                           state.R);
   }
-
-  /* Retract to last Z if in G98 */
-  if(state.retractMode == GCODE_RETRACT_LAST)
-    _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", precZ);
 
   /* Any extras ? */
   if(state.cycle == GCODE_CYCLE_BORING_WD_WS ||

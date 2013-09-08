@@ -185,8 +185,9 @@ bool init_gcode_state(void *data) {
 
 bool update_gcode_state(char *line) {
   uint8_t arg;
-  //TODO: consider whether these two should be moved to currentGCodeState
+  //TODO: consider whether these three should be moved to currentGCodeState
   double cX, cY, cZ, wX, wY, wZ;
+  double oldmZ;
   bool nullMove;
 
   parseCache.line = line;
@@ -423,6 +424,7 @@ bool update_gcode_state(char *line) {
       wZ = get_gcode_word_real('Z');
       if(isnan(wX) && isnan(wY) && isnan(wZ)) nullMove = true;
       else nullMove = false;
+      oldmZ = currentGCodeState.system.Z;
       move_math(&currentGCodeState.system, wX, wY, wZ);
     }
 
@@ -678,6 +680,11 @@ bool update_gcode_state(char *line) {
     currentGCodeState.system.cX = cX;
     currentGCodeState.system.cY = cY;
     currentGCodeState.system.cZ = cZ;
+    /* The cycle left us at R, but G98 mandates a return to last Z */
+    if(currentGCodeState.retractMode == GCODE_RETRACT_LAST)
+      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
+                        oldmZ, GCODE_FEED_PERMINUTE,
+                        GCODE_MACHINE_FEED_TRAVERSE);
   }
 
   return true;
