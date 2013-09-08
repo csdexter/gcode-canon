@@ -185,8 +185,9 @@ bool init_gcode_state(void *data) {
 
 bool update_gcode_state(char *line) {
   uint8_t arg;
-  //TODO: consider whether these should be moved to currentGCodeState
-  double cX, cY, cZ;
+  //TODO: consider whether these two should be moved to currentGCodeState
+  double cX, cY, cZ, wX, wY, wZ;
+  bool nullMove;
 
   parseCache.line = line;
    /* because space is not a G-Code word and all spaces have already been
@@ -415,6 +416,16 @@ bool update_gcode_state(char *line) {
    * Everything below this line will use whatever results from pushing the axis
    * word arguments through the current coordinate transformation. */
   if(!currentGCodeState.axisWordsConsumed) {
+    if(currentGCodeState.motionMode != STORE &&
+       currentGCodeState.motionMode != MACRO) {
+      wX = get_gcode_word_real('X');
+      wY = get_gcode_word_real('Y');
+      wZ = get_gcode_word_real('Z');
+      if(isnan(wX) && isnan(wY) && isnan(wZ)) nullMove = true;
+      else nullMove = false;
+      move_math(&currentGCodeState.system, wX, wY, wZ);
+    }
+
     switch(currentGCodeState.motionMode) {
       case CYCLE:
         /* It's a canned cycle, fetch I,J,K,L,P,Q,R now for later */
@@ -446,9 +457,6 @@ bool update_gcode_state(char *line) {
             currentGCodeState.J = get_gcode_word_real_default('J', currentGCodeState.J);
           }
         }
-        /* Then push X,Y,Z through the coordinate logic */
-        move_math(&currentGCodeState.system, get_gcode_word_real('X'),
-                  get_gcode_word_real('Y'), get_gcode_word_real('Z'));
         break;
       case STORE:
         switch(get_gcode_word_integer('L')) {
@@ -523,28 +531,25 @@ bool update_gcode_state(char *line) {
         update_parameter(26, get_gcode_word_real('Z'));
         commit_parameters();
         break;
-      case OFF:
-        break;
       case ARC:
+        /* It's an arc or circle, fetch I,J,K,R */
+        currentGCodeState.I = to_metric_math(
+            currentGCodeState.system,
+            get_gcode_word_real_default('I', currentGCodeState.I));
+        currentGCodeState.J = to_metric_math(
+            currentGCodeState.system,
+            get_gcode_word_real_default('J', currentGCodeState.J));
+        currentGCodeState.K = to_metric_math(
+            currentGCodeState.system,
+            get_gcode_word_real_default('K', currentGCodeState.K));
+        currentGCodeState.R = to_metric_math(
+            currentGCodeState.system,
+            get_gcode_word_real_default('R', currentGCodeState.R));
+        break;
+      case OFF:
       case RAPID:
       case LINEAR:
-        move_math(&currentGCodeState.system, get_gcode_word_real('X'),
-                  get_gcode_word_real('Y'), get_gcode_word_real('Z'));
-        if(currentGCodeState.motionMode == ARC) {
-          /* It's an arc or circle, fetch I,J,K,R */
-          currentGCodeState.I = to_metric_math(
-              currentGCodeState.system,
-              get_gcode_word_real_default('I', currentGCodeState.I));
-          currentGCodeState.J = to_metric_math(
-              currentGCodeState.system,
-              get_gcode_word_real_default('J', currentGCodeState.J));
-          currentGCodeState.K = to_metric_math(
-              currentGCodeState.system,
-              get_gcode_word_real_default('K', currentGCodeState.K));
-          currentGCodeState.R = to_metric_math(
-              currentGCodeState.system,
-              get_gcode_word_real_default('R', currentGCodeState.R));
-        }
+        /* Nothing extra to read from the command line */
         break;
     }
   } else currentGCodeState.axisWordsConsumed = false;
@@ -554,37 +559,39 @@ bool update_gcode_state(char *line) {
   update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_Z, currentGCodeState.system.gZ);
   commit_parameters();
 
-  switch(currentGCodeState.motionMode) {
-    case RAPID:
-      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
-                        currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
-                        GCODE_MACHINE_FEED_TRAVERSE);
-      break;
-    case LINEAR:
-      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
-                        currentGCodeState.system.Z, currentGCodeState.feedMode,
-                        currentGCodeState.F);
-      break;
-    case ARC:
-      //TODO: implement full-circle as a repeat of arcs, add new move_machine_ call for that
-      move_machine_arc(currentGCodeState.system.X, currentGCodeState.system.Y,
-                       currentGCodeState.system.Z, currentGCodeState.I,
-                       currentGCodeState.J, currentGCodeState.K,
-                       currentGCodeState.R, currentGCodeState.ccw,
-                       currentGCodeState.system.plane,
-                       currentGCodeState.feedMode, currentGCodeState.F);
-      break;
-    case CYCLE:
-      /* Insert the cycle */
-      splice_input(generate_cycles(currentGCodeState));
-      /* Save contents of c[XYZ] to restore them when the cycle is done */
-      cX = currentGCodeState.system.cX;
-      cY = currentGCodeState.system.cY;
-      cZ = currentGCodeState.system.cZ;
-      break;
-    default:
-      /*NOP*/;
-      break;
+  if(!nullMove) {
+    switch(currentGCodeState.motionMode) {
+      case RAPID:
+        move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
+                          currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
+                          GCODE_MACHINE_FEED_TRAVERSE);
+        break;
+      case LINEAR:
+        move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
+                          currentGCodeState.system.Z, currentGCodeState.feedMode,
+                          currentGCodeState.F);
+        break;
+      case ARC:
+        //TODO: implement full-circle as a repeat of arcs, add new move_machine_ call for that
+        move_machine_arc(currentGCodeState.system.X, currentGCodeState.system.Y,
+                         currentGCodeState.system.Z, currentGCodeState.I,
+                         currentGCodeState.J, currentGCodeState.K,
+                         currentGCodeState.R, currentGCodeState.ccw,
+                         currentGCodeState.system.plane,
+                         currentGCodeState.feedMode, currentGCodeState.F);
+        break;
+      case CYCLE:
+        /* Insert the cycle */
+        splice_input(generate_cycles(currentGCodeState));
+        /* Save contents of c[XYZ] to restore them when the cycle is done */
+        cX = currentGCodeState.system.cX;
+        cY = currentGCodeState.system.cY;
+        cZ = currentGCodeState.system.cZ;
+        break;
+      default:
+        /*NOP*/;
+        break;
+    }
   }
   if(currentGCodeState.nonModalPathMode && currentGCodeState.motionMode != OFF) {
     select_pathmode_machine(currentGCodeState.oldPathMode);
