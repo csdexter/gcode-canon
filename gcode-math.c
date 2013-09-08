@@ -133,6 +133,17 @@ double current_or_last_math(double input, double last) {
     return input;
 }
 
+double current_or_zero_math(double value, double last, bool absolute,
+    bool missing) {
+  if(missing)
+    if(absolute)
+      return last;
+    else
+      return +0.0E+0;
+  else
+    return value;
+}
+
 double relative_math(double input, double origin, bool absolute) {
     if(absolute)
       return input;
@@ -205,47 +216,49 @@ double scaling_math(double input, double origin, double factor) {
 }
 
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
-  double oldcX, oldcY;
   TGCodeAbsoluteMode oldAbsolute;
-  double newX, newY, newZ, newgX, newgY, newrX, newrY, newrZ;
+  double newX, newY, newZ, newgX, newgY, newrX, newrY, newrZ, newcX, newcY, newcZ;
 
   system->cX = current_or_last_math(X, system->cX);
   system->cY = current_or_last_math(Y, system->cY);
   system->cZ = current_or_last_math(Z, system->cZ);
   /* c[XYZ] now all contain non-NAN taken either from the current block or
-   * the previous word address value
+   * the previous word address value.
    *
    * NOTE: this is the end of processing for c[XYZ]: they're meant to contain
-   *       the word address values from the last block */
+   *       the word address values from the last block. */
 
   if(system->cartesian == GCODE_POLAR) {
-    oldcX = system->cX;
-    oldcY = system->cY;
-    polar_math(system->cX, system->cY, &system->cX, &system->cY);
+    polar_math(system->cX, system->cY, &newcX, &newcY);
     oldAbsolute = system->absolute;
     system->absolute = GCODE_RELATIVE;
-    /* c[XY] now contain the Cartesian equivalent of what was specified in
+    /* newc[XY] now contain the Cartesian equivalent of what was specified in
      * polar coordinates in the current block. Since polar coordinates always
      * work in incremental mode, we temporarily change to that to match. */
+  } else {
+    newcX = current_or_zero_math(
+        system->cX, system->gX, (system->absolute == GCODE_ABSOLUTE), isnan(X));
+    newcY = current_or_zero_math(
+        system->cY, system->gY, (system->absolute == GCODE_ABSOLUTE), isnan(Y));
   }
+  newcZ = current_or_zero_math(
+      system->cZ, system->gZ, (system->absolute == GCODE_ABSOLUTE), isnan(Z));
+  /* newc[XYZ] now contain the input value for all calculations below */
 
   /* we need the old g[XY] preserved to define the movement vector for radius
-   * compensation below */
-  newgX = relative_math(system->cX, system->gX,
+   * compensation below. */
+  newgX = relative_math(newcX, system->gX,
                         (system->absolute == GCODE_ABSOLUTE));
-  newgY = relative_math(system->cY, system->gY,
+  newgY = relative_math(newcY, system->gY,
                         (system->absolute == GCODE_ABSOLUTE));
-  system->gZ = relative_math(system->cZ, system->gZ,
+  system->gZ = relative_math(newcZ, system->gZ,
                              (system->absolute == GCODE_ABSOLUTE));
   /* g[XYZ] now contain the relative-corrected version of c[XYZ] as specified
    * in the current block or inferred from past state */
 
-  if(system->cartesian == GCODE_POLAR) {
+  if(system->cartesian == GCODE_POLAR)
     /* Restore previous state and word address contents if we were in polar */
     system->absolute = oldAbsolute;
-    system->cX = oldcX;
-    system->cY = oldcY;
-  }
 
   newgX = system_math(
       newgX, (system->current == GCODE_MCS), system->offset.X,
@@ -295,14 +308,17 @@ void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
         newrY = newY;
         break;
     }
+    newX = newrX;
+    newY = newrY;
+    newZ = newrZ;
   }
   /* newr[XYZ] now contain the rotated version of new[XYZ] according to the
    * current coordinate system rotation mode and parameters and active plane */
 
   if(system->scaling.mode == GCODE_SCALING_ON) {
-    newX = scaling_math(newrX, system->scaling.X, system->scaling.I);
-    newY = scaling_math(newrX, system->scaling.Y, system->scaling.J);
-    newZ = scaling_math(newrX, system->scaling.Z, system->scaling.K);
+    newX = scaling_math(newX, system->scaling.X, system->scaling.I);
+    newY = scaling_math(newY, system->scaling.Y, system->scaling.J);
+    newZ = scaling_math(newZ, system->scaling.Z, system->scaling.K);
   }
   /* new[XYZ] now contain the scaled version of newr[XYZ] according to the
    * current scaling mode and parameters */

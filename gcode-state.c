@@ -185,6 +185,8 @@ bool init_gcode_state(void *data) {
 
 bool update_gcode_state(char *line) {
   uint8_t arg;
+  //TODO: consider whether these should be moved to currentGCodeState
+  double cX, cY, cZ;
 
   parseCache.line = line;
    /* because space is not a G-Code word and all spaces have already been
@@ -350,8 +352,8 @@ bool update_gcode_state(char *line) {
                             GCODE_CYCLE_ZERO, GCODE_CYCLE_CANCEL))) {
     currentGCodeState.motionMode = OFF;
     if(arg != GCODE_CYCLE_CANCEL) {
-      do_WCS_move_math(&currentGCodeState.system, get_gcode_word_real('X'),
-                       get_gcode_word_real('Y'), get_gcode_word_real('Z'));
+      move_math(&currentGCodeState.system, get_gcode_word_real('X'),
+                get_gcode_word_real('Y'), get_gcode_word_real('Z'));
       move_machine_home(arg, currentGCodeState.system.X,
                         currentGCodeState.system.Y, currentGCodeState.system.Z);
       currentGCodeState.axisWordsConsumed = true;
@@ -387,14 +389,8 @@ bool update_gcode_state(char *line) {
   }
   if((arg = have_gcode_word('G', 6, GCODE_MOVE_RAPID, GCODE_MOVE_FEED,
                             GCODE_MODE_ARC_CW, GCODE_MODE_ARC_CCW,
-                            GCODE_MODE_CIRCLE_CW, GCODE_MODE_CIRCLE_CCW))) {
+                            GCODE_MODE_CIRCLE_CW, GCODE_MODE_CIRCLE_CCW)))
     currentGCodeState.motionMode = _map_move_to_motion(arg, &currentGCodeState.ccw);
-    if(!(arg == (GCODE_MOVE_RAPID + 100) || arg == GCODE_MOVE_FEED)) {
-      /* We just switched *to* arc interpolation, so start with sane values */
-      currentGCodeState.I = currentGCodeState.J = currentGCodeState.K = 0.0;
-      currentGCodeState.R = NAN;
-    }
-  }
   if((arg = have_gcode_word('G', 13, GCODE_CYCLE_PROBE_IN,
                             GCODE_CYCLE_PROBE_OUT, GCODE_CYCLE_DRILL_PP,
                             GCODE_CYCLE_TAP_LH, GCODE_CYCLE_DRILL_ND,
@@ -405,12 +401,6 @@ bool update_gcode_state(char *line) {
                             GCODE_CYCLE_BORING_WD_NS))) {
     currentGCodeState.motionMode = CYCLE;
     currentGCodeState.cycle = arg;
-    /* Mode has just changed *to* cycle so we must make sure we start with sane values */
-    currentGCodeState.system.cX = currentGCodeState.system.cY =
-        currentGCodeState.system.cZ = NAN;
-    currentGCodeState.R = currentGCodeState.system.gZ;
-    currentGCodeState.K = currentGCodeState.P = currentGCodeState.Q =
-        currentGCodeState.I = currentGCodeState.J = 0.0;
   }
   if((arg = have_gcode_word('M', 3, GCODE_SPINDLE_ORIENTATION,
                             GCODE_INDEXER_STEP, GCODE_RETRACT_Z)))
@@ -419,8 +409,6 @@ bool update_gcode_state(char *line) {
     currentGCodeState.motionMode = MACRO;
     currentGCodeState.macroCall = true;
   }
-  /* Have we just popped back to the real world? */
-  if(end_of_spliced_input()) currentGCodeState.motionMode = CYCLE;
   /* Sequence point: we read the axis words here and do the WCS math. All
    * axis-word-eating commands MUST be above this line and set
    * axisWordsConsumed to true.
@@ -458,15 +446,9 @@ bool update_gcode_state(char *line) {
             currentGCodeState.J = get_gcode_word_real_default('J', currentGCodeState.J);
           }
         }
-        currentGCodeState.system.cX = get_gcode_word_real_default(
-            'X', (currentGCodeState.system.absolute == GCODE_ABSOLUTE ?
-                  currentGCodeState.system.cX : 0));
-        currentGCodeState.system.cY = get_gcode_word_real_default(
-            'Y', (currentGCodeState.system.absolute == GCODE_ABSOLUTE ?
-                  currentGCodeState.system.cY : 0));
-        currentGCodeState.system.cZ = get_gcode_word_real_default(
-            'Z', currentGCodeState.system.cZ);
-        splice_input(generate_cycles(currentGCodeState));
+        /* Then push X,Y,Z through the coordinate logic */
+        move_math(&currentGCodeState.system, get_gcode_word_real('X'),
+                  get_gcode_word_real('Y'), get_gcode_word_real('Z'));
         break;
       case STORE:
         switch(get_gcode_word_integer('L')) {
@@ -546,8 +528,8 @@ bool update_gcode_state(char *line) {
       case ARC:
       case RAPID:
       case LINEAR:
-        do_WCS_move_math(&currentGCodeState.system, get_gcode_word_real('X'),
-                         get_gcode_word_real('Y'), get_gcode_word_real('Z'));
+        move_math(&currentGCodeState.system, get_gcode_word_real('X'),
+                  get_gcode_word_real('Y'), get_gcode_word_real('Z'));
         if(currentGCodeState.motionMode == ARC) {
           /* It's an arc or circle, fetch I,J,K,R */
           currentGCodeState.I = to_metric_math(
@@ -593,9 +575,12 @@ bool update_gcode_state(char *line) {
                        currentGCodeState.feedMode, currentGCodeState.F);
       break;
     case CYCLE:
-      /* Nothing to do, the freshly injected code above will move away from this
-       * mode with its first line. We will come back to this mode when the
-       * injected code ends */
+      /* Insert the cycle */
+      splice_input(generate_cycles(currentGCodeState));
+      /* Save contents of c[XYZ] to restore them when the cycle is done */
+      cX = currentGCodeState.system.cX;
+      cY = currentGCodeState.system.cY;
+      cZ = currentGCodeState.system.cZ;
       break;
     default:
       /*NOP*/;
@@ -609,6 +594,7 @@ bool update_gcode_state(char *line) {
     currentGCodeState.system.current = currentGCodeState.system.oldCurrent;
     set_parameter(GCODE_PARM_CURRENT_WCS, currentGCodeState.system.current);
   }
+  process_gcode_parameters();
   if((arg = have_gcode_word('M', 10, GCODE_STOP_COMPULSORY, GCODE_STOP_OPTIONAL,
                             GCODE_STOP_END, GCODE_SERVO_ON, GCODE_SERVO_OFF,
                             GCODE_STOP_RESET, GCODE_STOP_E, GCODE_APC_1,
@@ -637,7 +623,6 @@ bool update_gcode_state(char *line) {
         do_stop_machine(GCODE_STOP_COMPULSORY);
         break;
     }
-  process_gcode_parameters();
   if(have_gcode_word('M', 1, 47)) rewind_input();
   if(have_gcode_word('M', 1, 98)) {
     TProgramPointer programState;
@@ -677,6 +662,15 @@ bool update_gcode_state(char *line) {
       // currenGCodeState.macroCall as well
       if(programState.macroCall) stacks_pop_parameters();
     }
+  }
+ /* Have we just popped back to the real world? */
+  if(end_of_spliced_input()) {
+    /* We were only spliced during a cycle, hence we always return to CYCLE */
+    currentGCodeState.motionMode = CYCLE;
+    /* Restore contents of c[XYZ] to what they were during the cycle block */
+    currentGCodeState.system.cX = cX;
+    currentGCodeState.system.cY = cY;
+    currentGCodeState.system.cZ = cZ;
   }
 
   return true;
