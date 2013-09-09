@@ -72,16 +72,19 @@ long tell_input(void) {
 }
 
 char fetch_char_input(void) {
-  if(spliced && splice[splicep]) return splice[splicep++];
-  else {
-    if(spliced) {
+  char result;
+
+  if(spliced) {
+    result = splice[splicep++];
+    /* If the next char is '\0', act as if it were EOF and revert to the file */
+    if(!splice[splicep]) {
       spliced = false;
       endOfSplice = true;
       free((void *)splice);
     }
+  } else result = fgetc(input);
 
-    return fgetc(input);
-  }
+  return result;
 }
 
 /* NOTE: when in spliced mode, this does not change content retrieved in the

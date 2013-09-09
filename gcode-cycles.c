@@ -88,8 +88,6 @@ char *generate_cycles(TGCodeState state, double X, double Y, double Z) {
   uint16_t peckSteps;
   double extraMove, howFarDown = 0.0;
 
-
-
   /* Repetitions */
   while(state.L--) {
     /* First preparatory move */
@@ -102,8 +100,7 @@ char *generate_cycles(TGCodeState state, double X, double Y, double Z) {
     if(firstTime)
       firstTime = false;
     else if(!fixedR) {
-      if(state.system.absolute == GCODE_RELATIVE)
-        state.R = -Z;
+      if(state.system.absolute == GCODE_RELATIVE) state.R = -Z;
       fixedR = true;
     }
 

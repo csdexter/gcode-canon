@@ -76,9 +76,6 @@ static TGCodeState currentGCodeState = {
     0.0,
     0.0,
     0.0,
-    /* pR, pT */
-    0.0,
-    0.0,
     /* gX, gY, gZ */
     0.0,
     0.0,
@@ -186,9 +183,10 @@ bool init_gcode_state(void *data) {
 bool update_gcode_state(char *line) {
   uint8_t arg;
   //TODO: consider whether these three should be moved to currentGCodeState
-  double cX, cY, cZ, wX, wY, wZ;
-  double oldmZ, oldcZ;
+  static double cX, cY, cZ;
+  double wX, wY, wZ;
   bool nullMove, toRFirst;
+  static double lastZ;
 
   parseCache.line = line;
    /* because space is not a G-Code word and all spaces have already been
@@ -318,12 +316,8 @@ bool update_gcode_state(char *line) {
   }
   if((arg = have_gcode_word('G', 2, GCODE_ABSOLUTE, GCODE_RELATIVE)))
     currentGCodeState.system.absolute = arg;
-  if((arg = have_gcode_word('G', 2, GCODE_CARTESIAN, GCODE_POLAR))) {
-    /* Mode has just changed *to* polar so we must make sure we start with sane values */
-    if(arg != currentGCodeState.system.cartesian && arg == GCODE_POLAR)
-      currentGCodeState.system.pR = currentGCodeState.system.pT = 0.00;
+  if((arg = have_gcode_word('G', 2, GCODE_CARTESIAN, GCODE_POLAR)))
     currentGCodeState.system.cartesian = arg;
-  }
   if((arg = have_gcode_word('G', 2, GCODE_SCALING_ON, GCODE_SCALING_OFF))) {
     currentGCodeState.system.scaling.mode = arg;
     currentGCodeState.system.scaling.X = do_G_coordinate_math(
@@ -427,10 +421,6 @@ bool update_gcode_state(char *line) {
       else {
         nullMove = false;
         if(currentGCodeState.motionMode == CYCLE) {
-          /* We need this for G98 (i.e. retract to last Z) */
-          oldmZ = currentGCodeState.system.Z;
-          /* We need this to tell if we need the initial preparatory move */
-          oldcZ = currentGCodeState.system.cZ;
           /* Now pump the axis words through the start of the math pipeline */
           wX = current_or_zero_math(
               wX, currentGCodeState.system.cX,
@@ -438,9 +428,7 @@ bool update_gcode_state(char *line) {
           wY = current_or_zero_math(
               wY, currentGCodeState.system.cY,
               (currentGCodeState.system.absolute == GCODE_ABSOLUTE), isnan(wY));
-          wZ = current_or_zero_math(
-              wZ, currentGCodeState.system.cZ,
-              (currentGCodeState.system.absolute == GCODE_ABSOLUTE), isnan(wZ));
+          wZ = current_or_last_math(wZ, currentGCodeState.system.cZ);
         } else move_math(&currentGCodeState.system, wX, wY, wZ);
       }
     }
@@ -606,17 +594,24 @@ bool update_gcode_state(char *line) {
         break;
       case CYCLE:
         /* Save contents of c[XYZ] to restore them when the cycle is done */
-        cX = currentGCodeState.system.cX;
-        cY = currentGCodeState.system.cY;
-        cZ = currentGCodeState.system.cZ;
+        cX = wX;
+        cY = wY;
+        cZ = wZ;
+
+        /* Save lastZ in case we're in G98 */
+        if(currentGCodeState.system.absolute == GCODE_ABSOLUTE)
+          lastZ = currentGCodeState.system.cZ;
+        else
+          lastZ = (fpclassify(currentGCodeState.R) == FP_ZERO ?
+                   0.0 : -currentGCodeState.R);
 
         /* Determine whether we need the initial preparatory move */
         if(currentGCodeState.system.absolute == GCODE_ABSOLUTE)
-          if(oldcZ < currentGCodeState.R)
+          if(currentGCodeState.system.cZ < currentGCodeState.R)
             toRFirst = true;
           else
             toRFirst = false;
-        else if(!signbit(currentGCodeState.R))
+        else if(currentGCodeState.R > 0.0)
             toRFirst = true;
           else
             toRFirst = false;
@@ -721,15 +716,19 @@ bool update_gcode_state(char *line) {
   if(end_of_spliced_input()) {
     /* We were only spliced during a cycle, hence we always return to CYCLE */
     currentGCodeState.motionMode = CYCLE;
+
+    /* The cycle left us at R, but G98 mandates a return to last Z */
+    if(currentGCodeState.retractMode == GCODE_RETRACT_LAST) {
+      move_math(&currentGCodeState.system, NAN, NAN, lastZ);
+      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
+                        currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
+                        GCODE_MACHINE_FEED_TRAVERSE);
+    }
+
     /* Restore contents of c[XYZ] to what they were during the cycle block */
     currentGCodeState.system.cX = cX;
     currentGCodeState.system.cY = cY;
     currentGCodeState.system.cZ = cZ;
-    /* The cycle left us at R, but G98 mandates a return to last Z */
-    if(currentGCodeState.retractMode == GCODE_RETRACT_LAST)
-      move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
-                        oldmZ, GCODE_FEED_PERMINUTE,
-                        GCODE_MACHINE_FEED_TRAVERSE);
   }
 
   return true;
