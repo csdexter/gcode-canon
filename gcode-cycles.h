@@ -22,7 +22,7 @@ bool init_cycles(void *data);
 /* Generates G-Code for the canned cycle in state.cycle. The char * allocated
  * here will be freed in gcode-input, when the '\0' at its end will be read by
  * fetch_char_input */
-char *generate_cycles(TGCodeState state);
+char *generate_cycles(TGCodeState state, double X, double Y, double Z);
 bool done_cycles(void);
 
 #endif /* GCODE_CYCLES_H_ */

@@ -187,8 +187,8 @@ bool update_gcode_state(char *line) {
   uint8_t arg;
   //TODO: consider whether these three should be moved to currentGCodeState
   double cX, cY, cZ, wX, wY, wZ;
-  double oldmZ;
-  bool nullMove;
+  double oldmZ, oldcZ;
+  bool nullMove, toRFirst;
 
   parseCache.line = line;
    /* because space is not a G-Code word and all spaces have already been
@@ -418,14 +418,31 @@ bool update_gcode_state(char *line) {
    * word arguments through the current coordinate transformation. */
   if(!currentGCodeState.axisWordsConsumed) {
     if(currentGCodeState.motionMode != STORE &&
-       currentGCodeState.motionMode != MACRO) {
+       currentGCodeState.motionMode != MACRO &&
+       currentGCodeState.motionMode != OFF) {
       wX = get_gcode_word_real('X');
       wY = get_gcode_word_real('Y');
       wZ = get_gcode_word_real('Z');
       if(isnan(wX) && isnan(wY) && isnan(wZ)) nullMove = true;
-      else nullMove = false;
-      oldmZ = currentGCodeState.system.Z;
-      move_math(&currentGCodeState.system, wX, wY, wZ);
+      else {
+        nullMove = false;
+        if(currentGCodeState.motionMode == CYCLE) {
+          /* We need this for G98 (i.e. retract to last Z) */
+          oldmZ = currentGCodeState.system.Z;
+          /* We need this to tell if we need the initial preparatory move */
+          oldcZ = currentGCodeState.system.cZ;
+          /* Now pump the axis words through the start of the math pipeline */
+          wX = current_or_zero_math(
+              wX, currentGCodeState.system.cX,
+              (currentGCodeState.system.absolute == GCODE_ABSOLUTE), isnan(wX));
+          wY = current_or_zero_math(
+              wY, currentGCodeState.system.cY,
+              (currentGCodeState.system.absolute == GCODE_ABSOLUTE), isnan(wY));
+          wZ = current_or_zero_math(
+              wZ, currentGCodeState.system.cZ,
+              (currentGCodeState.system.absolute == GCODE_ABSOLUTE), isnan(wZ));
+        } else move_math(&currentGCodeState.system, wX, wY, wZ);
+      }
     }
 
     switch(currentGCodeState.motionMode) {
@@ -556,12 +573,17 @@ bool update_gcode_state(char *line) {
     }
   } else currentGCodeState.axisWordsConsumed = false;
 
-  update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_X, currentGCodeState.system.gX);
-  update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_Y, currentGCodeState.system.gY);
-  update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_Z, currentGCodeState.system.gZ);
-  commit_parameters();
-
   if(!nullMove) {
+   if(currentGCodeState.motionMode == RAPID ||
+     currentGCodeState.motionMode == LINEAR ||
+     currentGCodeState.motionMode == ARC) {
+      /* Otherwise, we don't know where the machine will be after this block */
+      update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_X, currentGCodeState.system.gX);
+      update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_Y, currentGCodeState.system.gY);
+      update_parameter(GCODE_PARM_FIRST_CEOB + GCODE_AXIS_Z, currentGCodeState.system.gZ);
+      commit_parameters();
+    }
+
     switch(currentGCodeState.motionMode) {
       case RAPID:
         move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
@@ -583,12 +605,35 @@ bool update_gcode_state(char *line) {
                          currentGCodeState.feedMode, currentGCodeState.F);
         break;
       case CYCLE:
-        /* Insert the cycle */
-        splice_input(generate_cycles(currentGCodeState));
         /* Save contents of c[XYZ] to restore them when the cycle is done */
         cX = currentGCodeState.system.cX;
         cY = currentGCodeState.system.cY;
         cZ = currentGCodeState.system.cZ;
+
+        /* Determine whether we need the initial preparatory move */
+        if(currentGCodeState.system.absolute == GCODE_ABSOLUTE)
+          if(oldcZ < currentGCodeState.R)
+            toRFirst = true;
+          else
+            toRFirst = false;
+        else if(!signbit(currentGCodeState.R))
+            toRFirst = true;
+          else
+            toRFirst = false;
+        /* And then do it if we do */
+        if(toRFirst) {
+          move_math(&currentGCodeState.system, NAN, NAN, currentGCodeState.R);
+          move_machine_line(currentGCodeState.system.X,
+                            currentGCodeState.system.Y,
+                            currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
+                            GCODE_MACHINE_FEED_TRAVERSE);
+          /* Erase our tracks */
+          if(currentGCodeState.system.absolute == GCODE_RELATIVE)
+            currentGCodeState.R = 0; /* Since we're now at R */
+        }
+
+        /* Insert the cycle */
+        splice_input(generate_cycles(currentGCodeState, wX, wY, wZ));
         break;
       default:
         /*NOP*/;

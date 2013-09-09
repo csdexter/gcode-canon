@@ -83,30 +83,30 @@ bool init_cycles(void *data) {
   return true;
 }
 
-char *generate_cycles(TGCodeState state) {
-  double preZ = state.system.Z, pregZ = state.system.gZ, precZ = state.system.cZ;
-  bool feedRetract;
+char *generate_cycles(TGCodeState state, double X, double Y, double Z) {
+  bool feedRetract, firstTime = true, fixedR = false;
   uint16_t peckSteps;
   double extraMove, howFarDown = 0.0;
 
-  /* Preparatory move (singleton, only if Z below R) */
-  move_math(&state.system, NAN, NAN, state.R);
-  if(state.system.Z > preZ)
-    _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", state.R);
-  state.system.Z = preZ;
-  state.system.gZ = pregZ;
-  state.system.cZ = precZ;
 
-  if(state.system.absolute == GCODE_RELATIVE)
-    //Z is relative to current position, R was relative to the previous
-    //position and needs to be made relative to Z
-    state.R = -state.system.cZ;
 
   /* Repetitions */
   while(state.L--) {
     /* First preparatory move */
     _add_generated_line("G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
-                        state.system.cX, state.system.cY);
+                        X, Y);
+
+    /* If we're in relative mode, we need to fix R *after* the first iteration
+     * because R is initially relative to lastZ and thereafter needs to be
+     * relative to Z. */
+    if(firstTime)
+      firstTime = false;
+    else if(!fixedR) {
+      if(state.system.absolute == GCODE_RELATIVE)
+        state.R = -Z;
+      fixedR = true;
+    }
+
     /* Second preparatory move */
     _add_generated_line("G00 Z" GCODE_REAL_FORMAT "\n", state.R);
     /* Actual canned cycle */
@@ -117,7 +117,7 @@ char *generate_cycles(TGCodeState state) {
       case GCODE_CYCLE_BORING_WD_WS:
       case GCODE_CYCLE_BORING_MANUAL:
       case GCODE_CYCLE_BORING_WD_NS:
-        _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n", state.system.cZ);
+        _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n", Z);
         if(state.cycle == GCODE_CYCLE_DRILL_WD ||
            state.cycle == GCODE_CYCLE_BORING_WD_WS ||
            state.cycle == GCODE_CYCLE_BORING_MANUAL ||
@@ -141,7 +141,7 @@ char *generate_cycles(TGCodeState state) {
         /* Start spindle, exact stop check, feed in */
         _add_generated_line("M%02d G09 G01 Z" GCODE_REAL_FORMAT "\n",
                             (state.cycle == GCODE_CYCLE_TAP_LH ? 4 : 3),
-                            state.system.cZ);
+                            Z);
         /* Spindle will stop at end of move, but better safe than sorry */
         _add_generated_line("M05\n");
         /* Reverse spindle, exact stop check, feed out */
@@ -164,18 +164,18 @@ char *generate_cycles(TGCodeState state) {
         _add_generated_line("M05\n");
         _add_generated_line("M19\n");
         _add_generated_line("G%02d G00 Z" GCODE_REAL_FORMAT "\n",
-                            state.system.absolute, state.system.cZ);
+                            state.system.absolute, Z);
         _add_generated_line("G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cX : -state.I),
+                                X : -state.I),
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cY : -state.J));
+                                Y : -state.J));
         //TODO: make it start in the same direction it was turning before
         _add_generated_line("M03\n");
         _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n", state.K);
         _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cZ : -state.K));
+                                Z : -state.K));
         _add_generated_line("M05\n");
         _add_generated_line("M19\n");
         _add_generated_line("G91 G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
@@ -186,9 +186,9 @@ char *generate_cycles(TGCodeState state) {
                             state.system.absolute, state.R);
         _add_generated_line("G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cX : -state.I),
+                                X : -state.I),
                             (state.system.absolute == GCODE_ABSOLUTE ?
-                                state.system.cY : -state.J));
+                                Y : -state.J));
         //TODO: make it start in the same direction it was turning before
         _add_generated_line("M03\n");
         break;
@@ -199,12 +199,10 @@ char *generate_cycles(TGCodeState state) {
          * extra move towards Z proper */
         peckSteps = (uint16_t)trunc(
             state.R -
-            (state.system.absolute == GCODE_ABSOLUTE ? state.system.cZ : 0) /
-            state.Q);
+            (state.system.absolute == GCODE_ABSOLUTE ? Z : 0) / state.Q);
         extraMove = fmod(
             state.R -
-            (state.system.absolute == GCODE_ABSOLUTE ? state.system.cZ : 0),
-            state.Q);
+            (state.system.absolute == GCODE_ABSOLUTE ? Z : 0), state.Q);
         /* Perform the pecks */
         while(peckSteps--) {
           /* Z goes down, so feed by -Q in relative mode */
