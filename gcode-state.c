@@ -199,9 +199,9 @@ bool update_gcode_state(char *line) {
     currentGCodeState.feedMode = arg;
   if(have_gcode_word('F', 0)) {
     if(currentGCodeState.feedMode != GCODE_FEED_INVTIME)
-      currentGCodeState.F = to_metric_math(
-          currentGCodeState.system,
-          override_feed_machine(get_gcode_word_real('F')));
+      currentGCodeState.F = inch_math(
+          override_feed_machine(get_gcode_word_real('F')),
+          (currentGCodeState.system.units == GCODE_UNITS_INCH));
     else
       currentGCodeState.F = get_gcode_word_real('F');
   }
@@ -470,8 +470,9 @@ bool update_gcode_state(char *line) {
           case 1: {
             TGCodeTool tool = fetch_tool(get_gcode_word_integer('P'));
 
-            tool.diameter = to_metric_math(currentGCodeState.system,
-                                           get_gcode_word_real('R')) * 2.0;
+            tool.diameter = inch_math(
+                get_gcode_word_real('R'),
+                (currentGCodeState.system.units == GCODE_UNITS_INCH)) * 2.0;
             update_tool(tool);
           } break;
           case 2: {
@@ -505,11 +506,13 @@ bool update_gcode_state(char *line) {
             TGCodeTool tool = fetch_tool(get_gcode_word_integer('P'));
 
             if(have_gcode_word('H', 0))
-              tool.length = to_metric_math(currentGCodeState.system,
-                                           get_gcode_word_real('H'));
+              tool.length = inch_math(
+                  get_gcode_word_real('H'),
+                  (currentGCodeState.system.units == GCODE_UNITS_INCH));
             if(have_gcode_word('D', 0))
-              tool.diameter = to_metric_math(currentGCodeState.system,
-                                             get_gcode_word_real('D'));
+              tool.diameter = inch_math(
+                  get_gcode_word_real('D'),
+                  (currentGCodeState.system.units == GCODE_UNITS_INCH));
             update_tool(tool);
           } break;
           default:
@@ -540,18 +543,18 @@ bool update_gcode_state(char *line) {
         break;
       case ARC:
         /* It's an arc or circle, fetch I,J,K,R */
-        currentGCodeState.I = to_metric_math(
-            currentGCodeState.system,
-            get_gcode_word_real_default('I', currentGCodeState.I));
-        currentGCodeState.J = to_metric_math(
-            currentGCodeState.system,
-            get_gcode_word_real_default('J', currentGCodeState.J));
-        currentGCodeState.K = to_metric_math(
-            currentGCodeState.system,
-            get_gcode_word_real_default('K', currentGCodeState.K));
-        currentGCodeState.R = to_metric_math(
-            currentGCodeState.system,
-            get_gcode_word_real_default('R', currentGCodeState.R));
+        currentGCodeState.I = inch_math(
+            current_or_last_math(get_gcode_word_real('I'), currentGCodeState.I),
+            (currentGCodeState.system.units == GCODE_UNITS_INCH));
+        currentGCodeState.J = inch_math(
+            current_or_last_math(get_gcode_word_real('J'), currentGCodeState.J),
+            (currentGCodeState.system.units == GCODE_UNITS_INCH));
+        currentGCodeState.K = inch_math(
+            current_or_last_math(get_gcode_word_real('K'), currentGCodeState.K),
+            (currentGCodeState.system.units == GCODE_UNITS_INCH));
+        currentGCodeState.R = inch_math(
+            current_or_last_math(get_gcode_word_real('R'), currentGCodeState.R),
+            (currentGCodeState.system.units == GCODE_UNITS_INCH));
         break;
       case OFF:
       case RAPID:

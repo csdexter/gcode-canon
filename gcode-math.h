@@ -20,8 +20,6 @@
 /* Coordinate pre-processing: de-inch, apply WCS and LCS and absolutize */
 double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input,
     const double offset, const double previous, const uint8_t axis);
-/* Transform value from imperial to metric if the current state says so */
-double to_metric_math(const TGCodeCoordinateInfo system, const double value);
 /* NEW STUFF BELOW */
 /* Returns input iff input is not NAN, otherwise returns last */
 double current_or_last_math(double input, double last);
@@ -50,7 +48,8 @@ void rotation_math(double inputX, double inputY, double theta, double originX,
     double originY, double *X, double *Y);
 /* Transforms input by scaling around origin by factor */
 double scaling_math(double input, double origin, double factor);
-/* New version of do_WCS_move_math() */
+/* Coordinate math workhorse. Transforms X,Y,Z according to all information in
+ * system and stores the result in system->X, system->Y, system->Z. */
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z);
 
 

@@ -30,7 +30,7 @@ clean:
 	rm -f tests/*.result
 
 test:	gcode-canon $(RESULTS)
-	cd tests; ./check-results.sh; cd ..
+	pushd tests; ./check-results.sh; popd
 
 %.c:	$(HEADERS)
 
@@ -42,4 +42,4 @@ gcode-canon: $(OBJECTS)
 	@echo "You're missing $@ (the intended result) for that test!"; exit 1
 
 %.result:	%.nc %.out
-	./gcode-canon $^ | egrep '^M(SG|POS)' > $@
+	@./gcode-canon $^ | egrep '^M(SG|POS)' > $@

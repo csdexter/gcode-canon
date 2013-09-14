@@ -18,24 +18,17 @@
 
 double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input,
     const double offset, const double previous, const uint8_t axis) {
-  if(!isnan(input)) {
-    input = to_metric_math(*system, input);
-    if(system->absolute == GCODE_ABSOLUTE) {
-      return (
-          system->current == GCODE_MCS ?
-              0.0 :
-              fetch_parameter(
-                  GCODE_PARM_FIRST_WCS +
-                  (system->current - GCODE_WCS_1) *
-                  GCODE_PARM_WCS_SIZE + axis) + offset) +
-          input;
-    } else return previous + input;
-  } else return previous;
-}
-
-double to_metric_math(const TGCodeCoordinateInfo system, const double value) {
-  if(isnan(value)) return value;
-  else return (system.units == GCODE_UNITS_INCH ? value * GCODE_INCH2MM : value);
+  if(!isnan(input))
+    return inch_math(
+        relative_math(
+            system_math(
+                input, (system->current == GCODE_MCS), offset,
+                fetch_parameter(
+                    GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) *
+                    GCODE_PARM_WCS_SIZE + axis)),
+            previous, (system->absolute == GCODE_ABSOLUTE)),
+        (system->units == GCODE_UNITS_INCH));
+  else return previous;
 }
 
 double current_or_last_math(double input, double last) {
@@ -224,7 +217,7 @@ void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
     newY = newrY;
     newZ = newrZ;
   }
-  /* newr[XYZ] now contain the rotated version of new[XYZ] according to the
+  /* new[XYZ] now contain the rotated version of new[XYZ] according to the
    * current coordinate system rotation mode and parameters and active plane */
 
   if(system->scaling.mode == GCODE_SCALING_ON) {
