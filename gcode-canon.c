@@ -19,6 +19,7 @@
 #include "gcode-state.h"
 #include "gcode-stacks.h"
 #include "gcode-cycles.h"
+#include "gcode-queue.h"
 
 
 int main(int argc, char *argv[]) {

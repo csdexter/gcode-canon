@@ -17,6 +17,7 @@
 #include "gcode-debugcon.h"
 #include "gcode-parameters.h"
 #include "gcode-tools.h"
+#include "gcode-queue.h"
 
 
 static double machineX, machineY, machineZ, noMirrorX, noMirrorY, beforeHomeX,
@@ -67,6 +68,12 @@ bool init_machine(void *data) {
   GCODE_DEBUG("Machine is up");
 
   return true;
+}
+
+bool move_machine_queue(void) {
+  //TODO: implement, this is a dummy.
+  if(!queue_size()) return false;
+  else return true;
 }
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,

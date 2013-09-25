@@ -47,6 +47,9 @@ typedef union {
 } TGCodeMachineState;
 
 bool init_machine(void *data);
+/* Examine the movement queue and perform the next scheduled move, if any, as
+ * appropriate. Returns false if the movement queue was empty. */
+bool move_machine_queue(void);
 /* Move to X,Y,Z-A,B,C at speed F. All axes move simultaneously for linear
  * interpolation */
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
