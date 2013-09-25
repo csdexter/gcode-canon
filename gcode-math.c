@@ -73,23 +73,6 @@ double length_comp_math(double input, TGCodeCompSpec comp) {
       return input - comp.offset;
 }
 
-void radius_comp_math(double inputX, double inputY, TGCodeCompSpec comp,
-    bool side, double *X, double *Y) {
-  //TODO: proper implementation with proper math, this one's a dummy
-  if(comp.mode == GCODE_COMP_RAD_OFF) {
-    *X = inputX;
-    *Y = inputY;
-  } else
-    if(((comp.mode == GCODE_COMP_RAD_L) && side) ||
-       ((comp.mode == GCODE_COMP_RAD_R) && !side)) {
-      *X = inputX + comp.offset;
-      *Y = inputY + comp.offset;
-    } else {
-      *X = inputX - comp.offset;
-      *Y = inputY - comp.offset;
-    }
-}
-
 double inch_math(double input, bool inch) {
   if(inch)
     return input * GCODE_INCH2MM;
@@ -100,12 +83,6 @@ double inch_math(double input, bool inch) {
 void polar_math(double radius, double theta, double *X, double *Y) {
   *X = radius * cos(theta * GCODE_DEG2RAD);
   *Y = radius * sin(theta * GCODE_DEG2RAD);
-}
-
-bool vector_side_math(double x1, double y1, double x2, double y2) {
-  //TODO: implement this properly, this is only a dummy
-
-  return true;
 }
 
 void rotation_math(double inputX, double inputY, double theta, double originX,
@@ -122,7 +99,7 @@ double scaling_math(double input, double origin, double factor) {
 
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
   TGCodeAbsoluteMode oldAbsolute;
-  double newX, newY, newZ, newgX, newgY, newrX, newrY, newrZ, newcX, newcY, newcZ;
+  double newX, newY, newZ, newrX, newrY, newrZ, newcX, newcY, newcZ;
 
   system->cX = current_or_last_math(X, system->cX);
   system->cY = current_or_last_math(Y, system->cY);
@@ -150,11 +127,9 @@ void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
       system->cZ, system->cZ, (system->absolute == GCODE_ABSOLUTE), isnan(Z));
   /* newc[XYZ] now contain the input value for all calculations below */
 
-  /* we need the old g[XY] preserved to define the movement vector for radius
-   * compensation below. */
-  newgX = relative_math(newcX, system->gX,
+  system->gX = relative_math(newcX, system->gX,
                         (system->absolute == GCODE_ABSOLUTE));
-  newgY = relative_math(newcY, system->gY,
+  system->gY = relative_math(newcY, system->gY,
                         (system->absolute == GCODE_ABSOLUTE));
   system->gZ = relative_math(newcZ, system->gZ,
                              (system->absolute == GCODE_ABSOLUTE));
@@ -165,12 +140,12 @@ void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
     /* Restore previous state and word address contents if we were in polar */
     system->absolute = oldAbsolute;
 
-  newgX = system_math(
-      newgX, (system->current == GCODE_MCS), system->offset.X,
+  system->gX = system_math(
+      system->gX, (system->current == GCODE_MCS), system->offset.X,
       fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) *
                       GCODE_PARM_WCS_SIZE + GCODE_AXIS_X));
-  newgY = system_math(
-      newgY, (system->current == GCODE_MCS), system->offset.Y,
+  system->gY = system_math(
+      system->gY, (system->current == GCODE_MCS), system->offset.Y,
       fetch_parameter(GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) *
                       GCODE_PARM_WCS_SIZE + GCODE_AXIS_Y));
   system->gZ = system_math(
@@ -180,12 +155,8 @@ void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
   /* g[XYZ] now contain the MCS-, WCS- and LCS- corrected version of their
    * previous self */
 
-  radius_comp_math(newgX, newgY, system->radComp,
-                   vector_side_math(system->gX, system->gY, newgX, newgY),
-                   &system->gX, &system->gY);
   system->gZ = length_comp_math(system->gZ, system->lenComp);
-  /* g[XYZ] now contain the length- and radius- compensated version of their
-   * previous self.
+  /* g[XYZ] now contain the length-compensated version of their previous self.
    * NOTE: compensation is dimension-less, as per the standard.
    * NOTE: this is the end of processing for g[XYZ]: they're meant to contain
    *       the G-Code interpreter's idea of the current coordinates */
