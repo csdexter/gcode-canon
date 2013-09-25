@@ -33,10 +33,12 @@ int main(int argc, char *argv[]) {
   init_input(inputFile);
   init_gcode_state(NULL);
   init_cycles(NULL);
+  init_queue();
 
   while(machine_running() && gcode_running() && fetch_line_input(line))
     update_gcode_state(line);
 
+  done_queue();
   done_cycles();
   done_input();
   done_tools();

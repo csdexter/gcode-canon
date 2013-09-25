@@ -64,6 +64,11 @@
 #define GCODE_AXIS_Y 1
 #define GCODE_AXIS_Z 2
 
+/* Handy for feeding decimal values back to us */
 #define GCODE_REAL_FORMAT "%4.4f"
+
+/* How many moves will we ever queue before executing them */
+#define GCODE_LOOKAHEAD_DEPTH 8
+
 
 #endif /* GCODE_COMMONS_H_ */

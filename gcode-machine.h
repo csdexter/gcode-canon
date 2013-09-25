@@ -12,6 +12,8 @@
 #define GCODE_MACHINE_H_
 
 
+#include <stdbool.h>
+
 #include "gcode-commons.h"
 #include "gcode-state.h"
 #include "gcode-debugcon.h"
