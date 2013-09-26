@@ -117,12 +117,10 @@ static TGCodeMotionMode _map_move_to_motion(TGCodeMoveMode mode, bool *ccw) {
     case GCODE_MODE_CIRCLE_CW:
       *ccw = false;
       return ARC;
-      break;
     case GCODE_MODE_ARC_CCW:
     case GCODE_MODE_CIRCLE_CCW:
       *ccw = true;
       return ARC;
-      break;
     default:
       return OFF;
   }
@@ -385,8 +383,15 @@ bool update_gcode_state(char *line) {
   }
   if((arg = have_gcode_word('G', 6, GCODE_MOVE_RAPID, GCODE_MOVE_FEED,
                             GCODE_MODE_ARC_CW, GCODE_MODE_ARC_CCW,
-                            GCODE_MODE_CIRCLE_CW, GCODE_MODE_CIRCLE_CCW)))
+                            GCODE_MODE_CIRCLE_CW, GCODE_MODE_CIRCLE_CCW))) {
+    if(arg != GCODE_MOVE_RAPID && arg != GCODE_MOVE_FEED &&
+       currentGCodeState.motionMode != ARC) {
+      /* Switching TO circular interpolation, ensure sane defaults */
+      currentGCodeState.I = currentGCodeState.J = currentGCodeState.K = 0.0;
+      currentGCodeState.R = NAN;
+    }
     currentGCodeState.motionMode = _map_move_to_motion(arg, &currentGCodeState.ccw);
+  }
   if((arg = have_gcode_word('G', 13, GCODE_CYCLE_PROBE_IN,
                             GCODE_CYCLE_PROBE_OUT, GCODE_CYCLE_DRILL_PP,
                             GCODE_CYCLE_TAP_LH, GCODE_CYCLE_DRILL_ND,

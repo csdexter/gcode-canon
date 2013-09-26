@@ -36,8 +36,10 @@ int main(int argc, char *argv[]) {
   init_cycles(NULL);
   init_queue();
 
-  while(machine_running() && gcode_running() && fetch_line_input(line))
+  while(machine_running() && gcode_running() && fetch_line_input(line)) {
     update_gcode_state(line);
+    move_machine_queue();
+  }
 
   done_queue();
   done_cycles();

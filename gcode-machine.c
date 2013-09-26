@@ -77,21 +77,20 @@ bool move_machine_queue(void) {
   if(!queue_size()) return false;
   else {
     dequeue_move(&movec);
-    if(movec.radComp.mode == GCODE_COMP_RAD_OFF) {
-      if(movec.isArc)
-        move_machine_arc(movec.target.X, movec.target.Y, movec.target.Z,
-                         movec.center.X, movec.center.Y, movec.center.Z,
-                         0, movec.ccw, 0, movec.feedMode, movec.feedValue);
-      else
-        move_machine_line(movec.target.X, movec.target.Y, movec.target.Z,
-                          movec.feedMode, movec.feedValue);
-    }
+    machineX = movec.target.X;
+    machineY = movec.target.Y;
+    machineZ = movec.target.Z;
+
+    GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
+
     return true;
   }
 }
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
     double F) {
+  TGCodeMoveSpec move;
+
   /* Check for and apply machine mirroring */
   X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
   Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
@@ -99,26 +98,26 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
     return false;
 
+  move.isArc = false;
+  move.target.X = X;
+  move.target.Y = Y;
+  move.target.Z = Z;
+  move.feedValue = _adjust_feed(feedMode, F, machineX, machineY, machineZ, X, Y, Z);
+
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
     GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", X, Y, Z)
   else
     GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4.0fmm/min",
-                X, Y, Z,
-                _adjust_feed(feedMode, F, machineX, machineY, machineZ, X, Y, Z));
+                X, Y, Z, move.feedValue);
 
-  machineX = X;
-  machineY = Y;
-  machineZ = Z;
-
-  GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
-
-  return true;
+  return enqueue_move(move);
 }
 
 bool move_machine_arc(double X, double Y, double Z, double I, double J,
     double K, double R, bool ccw, TGCodePlaneMode plane,
     TGCodeFeedMode feedMode, double F) {
   bool theLongWay = false;
+  TGCodeMoveSpec move;
 
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
     return false;
@@ -131,77 +130,40 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
 
   switch(plane) {
     case GCODE_PLANE_XY:
-      /* Check for and apply machine mirroring */
+      X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
+      Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
       if(currentMachineState.mirrorX ^ currentMachineState.mirrorY) ccw = !ccw;
-      if(currentMachineState.mirrorX) {
-        float oldX = X;
-
-        X = machineX - (X - noMirrorX);
-        noMirrorX = oldX;
-      }
-      if(currentMachineState.mirrorY) {
-        float oldY = Y;
-
-        Y = machineY - (Y - noMirrorY);
-        noMirrorY = oldY;
-      };
-      if(!isnan(R)) {
-        double d = hypot(machineX - X, machineY - Y);
-        I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? -1 : 1) *
-            sqrt(R * R - d * d / 4) * (Y - machineY) / d;
-        J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? 1 : -1) *
-            sqrt(R * R - d * d / 4) * (X - machineX) / d;
-        K = 0;
-      } else R = hypot(I, J);
+      arc_math(X, Y, machineX, machineY, &R, &I, &J, &K, ccw ^ theLongWay);
       break;
     case GCODE_PLANE_ZX:
-      if(currentMachineState.mirrorX) {
-        float oldX = X;
-
-        ccw = !ccw;
-        X = machineX - (X - noMirrorX);
-        noMirrorX = oldX;
-      }
-      if(!isnan(R)) {
-        double d = hypot(machineZ - Z, machineX - X);
-        K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? -1 : 1) *
-            sqrt(R * R - d * d / 4) * (X - machineX) / d;
-        I = (X - machineX) / 2 + ((ccw ^ theLongWay) ? 1 : -1) *
-            sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
-        J = 0;
-      } else R = hypot(K, I);
+      X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
+      if(currentMachineState.mirrorX) ccw = !ccw;
+      arc_math(Z, X, machineZ, machineX, &R, &K, &I, &J, ccw ^ theLongWay);
       break;
     case GCODE_PLANE_YZ:
-      if(currentMachineState.mirrorY) {
-        float oldY = Y;
-
-        ccw = !ccw;
-        Y = machineY - (Y - noMirrorY);
-        noMirrorY = oldY;
-      }
-      if(!isnan(R)) {
-        double d = hypot(machineY - Y, machineZ - Z);
-        J = (Y - machineY) / 2 + ((ccw ^ theLongWay) ? -1 : 1) *
-            sqrt(R * R - d * d / 4) * (Z - machineZ) / d;
-        K = (Z - machineZ) / 2 + ((ccw ^ theLongWay) ? 1 : -1) *
-            sqrt(R * R - d * d / 4) * (Y - machineY) / d;
-        I = 0;
-      } else R = hypot(J, K);
+      Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
+      if(currentMachineState.mirrorY) ccw = !ccw;
+      arc_math(Y, Z, machineY, machineZ, &R, &J, &K, &I, ccw ^ theLongWay);
       break;
   }
 
+  move.isArc = true;
+  move.center.X = machineX + I;
+  move.center.Y = machineY + J;
+  move.center.Z = machineZ + K;
+  move.ccw = ccw;
+  move.target.X = X;
+  move.target.Y = Y;
+  move.target.Z = Z;
+  move.feedValue = _adjust_feed(feedMode, F, machineX, machineY, machineZ, X, Y, Z);
+
   GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4.0fmm/min",
-              machineX + I, machineY + J, machineZ + K, R,
+              move.center.X, move.center.Y, move.center.Z, R,
               (plane == GCODE_PLANE_XY ? "XY" :
                   (plane == GCODE_PLANE_ZX ? "ZX" : "YZ")),
-              (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z,
-              _adjust_feed(feedMode, F, machineX, machineY, machineZ, X, Y, Z));
-  machineX = X;
-  machineY = Y;
-  machineZ = Z;
-  GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
+              (ccw ? "counter-clockwise" : "clockwise"), X, Y, Z, move.feedValue);
 
-  return true;
+  return enqueue_move(move);
 }
 
 bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {

@@ -25,7 +25,6 @@ void init_queue(void) {
   qHead = 1;
   qTail = 0;
   queue[qHead].isArc = false;
-  queue[qHead].feedMode = GCODE_FEED_PERMINUTE;
   queue[qHead].feedValue = 0.0;
   queue[qHead].target.X = 0.0;
   queue[qHead].target.Y = 0.0;

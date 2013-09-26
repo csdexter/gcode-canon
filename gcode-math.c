@@ -106,6 +106,16 @@ double mirroring_math(double input, double previous, double *original, bool mirr
   return previous;
 }
 
+void arc_math(double X, double Y, double oldX, double oldY, double *R,
+    double *I, double *J, double *K, bool invert) {
+  if(!isnan(*R)) {
+    double d = hypot(oldX - X, oldY - Y);
+    *I = (X - oldX) / 2 + (invert ? -1 : 1) * sqrt(*R * *R - d * d / 4) * (Y - oldY) / d;
+    *J = (Y - oldY) / 2 + (invert ? 1 : -1) * sqrt(*R * *R - d * d / 4) * (X - oldX) / d;
+    *K = 0;
+  } else *R = hypot(*I, *J);
+}
+
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
   TGCodeAbsoluteMode oldAbsolute;
   double newX, newY, newZ, newrX, newrY, newrZ, newcX, newcY, newcZ;
