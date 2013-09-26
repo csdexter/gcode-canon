@@ -119,9 +119,6 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
   bool theLongWay = false;
   TGCodeMoveSpec move;
 
-  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
-    return false;
-
   /* Use the >180deg arc on user request */
   if(!isnan(R) && signbit(R)) {
     theLongWay = true;
@@ -146,6 +143,9 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
       arc_math(Y, Z, machineY, machineZ, &R, &J, &K, &I, ccw ^ theLongWay);
       break;
   }
+
+  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
+    return false;
 
   move.isArc = true;
   move.center.X = machineX + I;

@@ -3,6 +3,5 @@
 * fix all remaining weird stuff in NOTES (such as being unable to parse G00.000 as G00)
 * complete the testing suite
 * implement extra math for radius compensation in gcode-math
-* move remaining math still in gcode-machine to gcode-math (_adjust_feed and move_machine_arc)
 * implement radius compensation logic in move_machine_queue
 * start adding kinematic stuff around move_machine_queue (acceleration planning, contour control etc.)

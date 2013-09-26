@@ -22,13 +22,7 @@ static TGCodeMoveSpec queue[GCODE_LOOKAHEAD_DEPTH];
 
 
 void init_queue(void) {
-  qHead = 1;
-  qTail = 0;
-  queue[qHead].isArc = false;
-  queue[qHead].feedValue = 0.0;
-  queue[qHead].target.X = 0.0;
-  queue[qHead].target.Y = 0.0;
-  queue[qHead].target.Z = 0.0;
+  qHead = qTail = 0;
 
   GCODE_DEBUG("Movement queue ready, %d steps deep", GCODE_LOOKAHEAD_DEPTH);
 }
