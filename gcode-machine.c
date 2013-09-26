@@ -71,9 +71,22 @@ bool init_machine(void *data) {
 }
 
 bool move_machine_queue(void) {
-  //TODO: implement, this is a dummy.
+  TGCodeMoveSpec movec;
+
   if(!queue_size()) return false;
-  else return true;
+  else {
+    dequeue_move(&movec);
+    if(movec.radComp.mode == GCODE_COMP_RAD_OFF) {
+      if(movec.isArc)
+        move_machine_arc(movec.target.X, movec.target.Y, movec.target.Z,
+                         movec.center.X, movec.center.Y, movec.center.Z,
+                         0, movec.ccw, 0, movec.feedMode, movec.feedValue);
+      else
+        move_machine_line(movec.target.X, movec.target.Y, movec.target.Z,
+                          movec.feedMode, movec.feedValue);
+    }
+    return true;
+  }
 }
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,

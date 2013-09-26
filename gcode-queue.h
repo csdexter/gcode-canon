@@ -22,7 +22,8 @@ typedef struct {
   TGCodeOffsetSpec target;
   TGCodeOffsetSpec center;
   bool ccw;
-  double feed;
+  TGCodeFeedMode feedMode;
+  double feedValue;
   TGCodeCompSpec radComp;
 } TGCodeMoveSpec;
 
