@@ -42,6 +42,9 @@ void rotation_math(double inputX, double inputY, double theta, double originX,
     double originY, double *X, double *Y);
 /* Transforms input by scaling around origin by factor */
 double scaling_math(double input, double origin, double factor);
+/* Transforms changes in input wrt. original by mirroring them if mirrored is
+ * true. Saves input in original. */
+double mirroring_math(double input, double previous, double *original, bool mirrored);
 /* Coordinate math workhorse. Transforms X,Y,Z according to all information in
  * system and stores the result in system->X, system->Y, system->Z. */
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z);

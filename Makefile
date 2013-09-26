@@ -29,17 +29,18 @@ clean:
 	rm -f *.o gcode-canon
 	rm -f tests/*.result
 
-test:	gcode-canon $(RESULTS)
-	pushd tests; ./check-results.sh; popd
+test:	$(RESULTS)
+	@pushd tests; ./check-results.sh; popd
 
 %.c:	$(HEADERS)
 
-gcode-canon: $(OBJECTS)
+gcode-canon:	$(OBJECTS)
 	$(CC) $(OBJECTS) -lm -o gcode-canon
 
 # We cannot run any tests for which we don't know the intended result
 %.out:
 	@echo "You're missing $@ (the intended result) for that test!"; exit 1
 
-%.result:	%.nc %.out
+%.result:	%.nc %.out gcode-canon
+	@echo Generating $@ ...
 	@./gcode-canon $^ | egrep '^M(SG|POS)' > $@

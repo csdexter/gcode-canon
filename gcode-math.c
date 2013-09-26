@@ -97,6 +97,15 @@ double scaling_math(double input, double origin, double factor) {
   return origin + (input - origin) * factor;
 }
 
+double mirroring_math(double input, double previous, double *original, bool mirrored) {
+  if(mirrored) {
+      previous -= input - *original;
+      *original = input;
+    } else previous = input;
+
+  return previous;
+}
+
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
   TGCodeAbsoluteMode oldAbsolute;
   double newX, newY, newZ, newrX, newrY, newrZ, newcX, newcY, newcZ;

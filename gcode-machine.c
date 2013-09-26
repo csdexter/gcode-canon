@@ -18,6 +18,7 @@
 #include "gcode-parameters.h"
 #include "gcode-tools.h"
 #include "gcode-queue.h"
+#include "gcode-math.h"
 
 
 static double machineX, machineY, machineZ, noMirrorX, noMirrorY, beforeHomeX,
@@ -91,30 +92,24 @@ bool move_machine_queue(void) {
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
     double F) {
-  double oldX = machineX, oldY = machineY, oldZ = machineZ;
+  /* Check for and apply machine mirroring */
+  X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
+  Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
 
   if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
     return false;
 
-  /* Check for and apply machine mirroring */
-  if(currentMachineState.mirrorX) {
-    machineX -= X - noMirrorX;
-    noMirrorX = X;
-  } else machineX = X;
-  if(currentMachineState.mirrorY) {
-    machineY -= Y - noMirrorY;
-    noMirrorY = Y;
-  } else machineY = Y;
-  machineZ = Z;
-
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
-    GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", machineX,
-                machineY, machineZ)
+    GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", X, Y, Z)
   else
     GCODE_DEBUG("Linear move to V(%4.2fmm, %4.2fmm, %4.2fmm) at %4.0fmm/min",
-                machineX, machineY, machineZ,
-                _adjust_feed(feedMode, F, oldX, oldY, oldZ, machineX, machineY,
-                             machineZ));
+                X, Y, Z,
+                _adjust_feed(feedMode, F, machineX, machineY, machineZ, X, Y, Z));
+
+  machineX = X;
+  machineY = Y;
+  machineZ = Z;
+
   GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
 
   return true;
