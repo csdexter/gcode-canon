@@ -14,6 +14,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 
 double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input,
@@ -222,4 +223,94 @@ void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
   system->X = newX;
   system->Y = newY;
   system->Z = newZ;
+}
+
+TGCodeRadCompMode vector_side_math(double x1, double y1, double x2, double y2,
+    double x3, double y3) {
+  double side = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
+
+  if(fpclassify(side) == FP_ZERO)
+    return GCODE_COMP_RAD_OFF;
+  else if(signbit(side))
+    return GCODE_COMP_RAD_R;
+  else
+    return GCODE_COMP_RAD_L;
+}
+
+TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
+    TGCodeCompSpec radComp) {
+  double invert;
+
+  /* Do we actually have anything to do here? */
+  if(radComp.mode == GCODE_COMP_RAD_OFF) return tM;
+
+  if(tM.isArc) {
+    double sAngle = atan2(pM.target.Y - tM.center.Y,
+                          pM.target.X - tM.center.X) * GCODE_RAD2DEG;
+    double eAngle = atan2(tM.target.Y - tM.center.Y,
+                          tM.target.X - tM.center.X) * GCODE_RAD2DEG;
+    double radius = hypot(tM.center.X - tM.target.X, tM.center.Y - tM.target.Y);
+    TGCodeRadCompMode cside;
+
+    if(signbit(sAngle - eAngle))
+      if(tM.ccw)
+        invert = -1.0;
+      else
+        invert = +1.0;
+    else
+      if(tM.ccw)
+        invert = +1.0;
+      else
+        invert = -1.0;
+
+    if(round(fabs(sAngle - eAngle)) == 180)
+      if(tM.ccw)
+        cside = GCODE_COMP_RAD_L;
+      else
+        cside = GCODE_COMP_RAD_R;
+    else
+      /* Draw a chord from start to finish and check the side the center falls on. */
+      cside = vector_side_math(pM.target.X, pM.target.Y, tM.target.X,
+                               tM.target.Y, tM.center.X, tM.center.Y);
+
+    if(cside == radComp.mode)
+      radius -= radComp.offset * invert;
+    else
+      radius += radComp.offset * invert;
+
+    tM.target.X = radius * cos(eAngle * GCODE_DEG2RAD);
+    tM.target.Y = radius * sin(eAngle * GCODE_DEG2RAD);
+  } else {
+    double angle = atan2(tM.target.Y - pM.target.Y,
+                         tM.target.X - pM.target.X) * GCODE_RAD2DEG;
+    double coefx, coefy;
+
+    if(radComp.mode == GCODE_COMP_RAD_L)
+      invert = +1.0;
+    else
+      invert = -1.0;
+
+    if(angle >= 0 && angle <= 90) {
+      angle = 90 - angle;
+      coefx = -1.0 * invert;
+      coefy = +1.0 * invert;
+    } else if(angle > 90 && angle <= 180) {
+      angle -= 90;
+      coefx = -1.0 * invert;
+      coefy = -1.0 * invert;
+    } else if(angle > -180 && angle <= -90) {
+      angle = -90 - angle;
+      coefx = +1.0 * invert;
+      coefy = -1.0 * invert;
+    } else if(angle > -90 && angle < 0) {
+      angle += 90;
+      coefx = +1.0 * invert;
+      coefy = +1.0 * invert;
+    }
+
+    tM.target.X += coefx * cos(angle * GCODE_DEG2RAD) * radComp.offset;
+    tM.target.Y += coefy * sin(angle * GCODE_DEG2RAD) * radComp.offset;
+  }
+
+  return tM;
 }

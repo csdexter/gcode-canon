@@ -12,9 +12,11 @@
 #define GCODE_MATH_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "gcode-commons.h"
 #include "gcode-state.h"
+#include "gcode-queue.h"
 
 
 /* Coordinate pre-processing: de-inch, apply WCS and LCS and absolutize */
@@ -53,6 +55,13 @@ void arc_math(double X, double Y, double oldX, double oldY, double *R,
 /* Coordinate math workhorse. Transforms X,Y,Z according to all information in
  * system and stores the result in system->X, system->Y, system->Z. */
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z);
-
+/* Returns the side of (x1,y1)->(x2,y2) (x3,y3) is on as radius compensation
+ * mode. */
+TGCodeRadCompMode vector_side_math(double x1, double y1, double x2, double y2,
+    double x3, double y3);
+/* Calculates the offset of thisMove according to the given radius compensation
+ * mode specification */
+TGCodeMoveSpec offset_math(TGCodeMoveSpec prevMove, TGCodeMoveSpec thisMove,
+    TGCodeCompSpec radComp);
 
 #endif /* GCODE_MATH_H_ */
