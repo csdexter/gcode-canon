@@ -40,6 +40,8 @@ int main(int argc, char *argv[]) {
     update_gcode_state(line);
     move_machine_queue();
   }
+  /* Flush movement queue */
+  while(move_machine_queue());
 
   done_queue();
   done_cycles();
