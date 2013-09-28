@@ -8,9 +8,11 @@
  ============================================================================
  */
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "gcode-commons.h"
 #include "gcode-queue.h"
@@ -19,10 +21,12 @@
 
 static uint8_t qHead, qTail;
 static TGCodeMoveSpec queue[GCODE_LOOKAHEAD_DEPTH];
+static TGCodeOffsetSpec qLastTarget;
 
 
 void init_queue(void) {
   qHead = qTail = 0;
+  qLastTarget.X = qLastTarget.Y = qLastTarget.Z = NAN;
 
   GCODE_DEBUG("Movement queue ready, %d steps deep", GCODE_LOOKAHEAD_DEPTH);
 }
@@ -31,9 +35,18 @@ bool enqueue_move(TGCodeMoveSpec move) {
   uint8_t nHead = (qHead + 1) == GCODE_LOOKAHEAD_DEPTH ? 0 : (qHead + 1);
 
   if(nHead != qTail) {
-    queue[qHead] = move;
-    qHead = nHead;
-
+    /* Comparing floating point values for equality is asking for trouble,
+    * however we're simply treating them as opaque data and actually asking
+    * "is THIS equal to THE ONE BEFORE?" as opposed to "is 1.2 equal to 1.2?".
+    *
+    * Since the data we previously fed in went through the same transformations
+    * and obeys the same limitations of the storage type, we can safely conclude
+    * we'll always be comparing apples to apples. */
+    if(memcmp(&qLastTarget, &move.target, sizeof(TGCodeOffsetSpec))) {
+      queue[qHead] = move;
+      qHead = nHead;
+      qLastTarget = move.target;
+    }
     return true;
   } else return false;
 }

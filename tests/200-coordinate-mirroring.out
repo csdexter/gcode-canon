@@ -1,6 +1,7 @@
 MSG: WAR: Machine servos activated!
 MSG: STA: Scanning input for programs (O words)
 MSG: WAR: Machine servos activated!
+MPOS,0.00,0.00,0.00
 MPOS,10.00,0.00,0.00
 MPOS,10.00,15.00,0.00
 MPOS,13.54,18.54,0.00

@@ -74,7 +74,7 @@ bool init_machine(void *data) {
 bool move_machine_queue(void) {
   TGCodeMoveSpec movec;
 
-  if(!queue_size()) return false;
+  if(!queue_size() || !servoPower) return false;
   else {
     dequeue_move(&movec);
     machineX = movec.target.X;
@@ -94,9 +94,6 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
   /* Check for and apply machine mirroring */
   X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
   Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
-
-  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
-    return false;
 
   move.isArc = false;
   move.target.X = X;
@@ -143,9 +140,6 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
       arc_math(Y, Z, machineY, machineZ, &R, &J, &K, &I, ccw ^ theLongWay);
       break;
   }
-
-  if(!servoPower || (X == machineX && Y == machineY && Z == machineZ))
-    return false;
 
   move.isArc = true;
   move.center.X = machineX + I;
