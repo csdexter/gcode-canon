@@ -318,3 +318,141 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
 
   return tM;
 }
+
+double _slope_math(double x1, double y1, double x2, double y2) {
+  if(x1 == x2)
+    if(y2 > y1)
+      return +INFINITY;
+    else
+      return -INFINITY;
+  else
+    return (y2 - y1) / (x2 - x1);
+}
+
+double _constant_math(double slope, double x1, double y1) {
+  if isinf(slope)
+    return x1;
+  else
+    return y1 - slope * x1;
+}
+
+void intersection_math(double opX, double opY, TGCodeMoveSpec prevMove,
+    double otX, double otY, TGCodeMoveSpec thisMove, double *iX, double *iY) {
+  if(prevMove.isArc == thisMove.isArc) {
+    if(prevMove.isArc) {
+      /* Both are arcs, apply circle-circle (!) intersection calculations */
+      double r1 = hypot(prevMove.center.X - opX, prevMove.center.Y - opY);
+      double r2 = hypot(thisMove.center.X - otX, thisMove.center.Y - otY);
+      double d = hypot(thisMove.center.X - prevMove.center.X,
+                       thisMove.center.Y - prevMove.center.Y);
+      double a = (r1 * r1 - (r2 * r2) + d * d) / (2 * d);
+      double h = sqrt(r1 * r1 - a * a);
+      double xo = prevMove.center.X + a * (thisMove.center.X - prevMove.center.X) / d;
+      double yo = prevMove.center.Y + a * (thisMove.center.Y - prevMove.center.Y) / d;
+      double xi1 = xo + h * (thisMove.center.Y - prevMove.center.Y) / d;
+      double xi2 = xo - h * (thisMove.center.Y - prevMove.center.Y) / d;
+      double yi1 = yo - h * (thisMove.center.X - prevMove.center.X) / d;
+      double yi2 = yo + h * (thisMove.center.X - prevMove.center.X) / d;
+
+      /* Pick the closest to the end of the first arc */
+      double d1 = hypot(prevMove.target.X - xi1, prevMove.target.Y - yi1);
+      double d2 = hypot(prevMove.target.X - xi2, prevMove.target.Y - yi2);
+      if(d1 > d2) {
+        *iX = xi2;
+        *iY = yi2;
+      } else {
+        *iX = xi1;
+        *iY = yi1;
+      }
+    } else {
+      /* Both are lines, apply line-line intersection calculations */
+      double s1 = _slope_math(opX, opY, prevMove.target.X, prevMove.target.Y);
+      double s2 = _slope_math(otX, otY, thisMove.target.X, thisMove.target.Y);
+      double c1 = _constant_math(s1, opX, opY);
+      double c2 = _constant_math(s2, otX, otY);
+
+      if(isinf(s1)) {
+        *iX = c1;
+        /* Turn things around */
+        s1 = s2;
+        c1 = c2;
+      } else if(isinf(s2))
+        *iX = c2;
+      else {
+        if(fpclassify(s1) == FP_ZERO) {
+          /* Turn things around */
+          s1 = s2;
+          s2 = 0.0;
+        }
+        *iX = (c2 - c1) / (s1 - s2);
+      }
+
+      *iY = s1 * (*iX) + c1;
+    }
+  } else {
+    /* One is an arc and the other a line, not necessarily in that order */
+    double xl1, yl1, xl2, yl2, xa, ya, xc, yc, sgn, xt, yt;
+    bool lineFirst;
+    if(prevMove.isArc) {
+      lineFirst = false;
+      xl1 = otX;
+      yl1 = otY;
+      xl2 = thisMove.target.X;
+      yl2 = thisMove.target.Y;
+      xa = opX;
+      ya = opY;
+      xc = prevMove.center.X;
+      yc = prevMove.center.Y;
+    } else {
+      lineFirst = true;
+      xl1 = opX;
+      yl1 = opY;
+      xl2 = prevMove.target.X;
+      yl2 = prevMove.target.Y;
+      xa = otX;
+      ya = otY;
+      xc = thisMove.center.X;
+      yc = thisMove.center.Y;
+    }
+
+    /* Put the origin in the center of the arc */
+    xl1 -= xc;
+    xl2 -= xc;
+    yl1 -= yc;
+    yl2 -= yc;
+    /* Do calculations */
+    double dx = xl2 - xl1;
+    double dy = yl2 - yl1;
+    double dr = hypot(dx, dy);
+    double D = xl1 * yl2 - xl2 * yl1;
+    double r = hypot(xc - xa, yc - ya);
+
+    if(signbit(dy))
+      sgn = -1.0;
+    else
+      sgn = +1.0;
+
+    double xi1 = (D * dy + sgn * dx * sqrt(r * r * dr * dr - D * D)) / (dr * dr);
+    double xi2 = (D * dy - sgn * dx * sqrt(r * r * dr * dr - D * D)) / (dr * dr);
+    double yi1 = (-D * dx + fabs(dy) * sqrt(r * r * dr * dr - D * D)) / (dr * dr);
+    double yi2 = (-D * dx - fabs(dy) * sqrt(r * r * dr * dr - D * D)) / (dr * dr);
+
+    /* Pick the one closest to the transition point */
+    if(lineFirst) {
+      xt = xl2;
+      yt = yl2;
+    } else {
+      xt = xl1;
+      yt = yl1;
+    }
+    double d1 = hypot(xt - xi1, yt - yi1);
+    double d2 = hypot(xt - xi2, yt - yi2);
+    if(d1 > d2) {
+     *iX =  xi2 + xc;
+     *iY =  yi2 + yc;
+    } else {
+     *iX =  xi1 + xc;
+     *iY =  yi1 + yc;
+    }
+  }
+}

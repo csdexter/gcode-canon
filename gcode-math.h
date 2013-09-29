@@ -66,6 +66,7 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec prevMove, TGCodeMoveSpec thisMove,
     TGCodeCompSpec radComp, double *originX, double *originY);
 /* Calculates the intersection of (opX,opY)->prevMove and (otX,otY)->thisMove
  * closer to prevMove.target */
-
+void intersection_math(double opX, double opY, TGCodeMoveSpec prevMove,
+    double otX, double otY, TGCodeMoveSpec thisMove, double *iX, double *iY);
 
 #endif /* GCODE_MATH_H_ */
