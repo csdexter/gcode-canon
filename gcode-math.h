@@ -60,8 +60,12 @@ void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z);
 TGCodeRadCompMode vector_side_math(double x1, double y1, double x2, double y2,
     double x3, double y3);
 /* Calculates the offset of thisMove according to the given radius compensation
- * mode specification */
+ * mode specification. Returns the new target in a TGCodeMoveSpec copied from
+ * thisMove, the new origin is at (originX,originY) */
 TGCodeMoveSpec offset_math(TGCodeMoveSpec prevMove, TGCodeMoveSpec thisMove,
-    TGCodeCompSpec radComp);
+    TGCodeCompSpec radComp, double *originX, double *originY);
+/* Calculates the intersection of (opX,opY)->prevMove and (otX,otY)->thisMove
+ * closer to prevMove.target */
+
 
 #endif /* GCODE_MATH_H_ */

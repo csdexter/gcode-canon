@@ -238,7 +238,7 @@ TGCodeRadCompMode vector_side_math(double x1, double y1, double x2, double y2,
 }
 
 TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
-    TGCodeCompSpec radComp) {
+    TGCodeCompSpec radComp, double *originX, double *originY) {
   double invert;
 
   /* Do we actually have anything to do here? */
@@ -278,6 +278,8 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
     else
       radius += radComp.offset * invert;
 
+    *originX = radius * cos(sAngle * GCODE_DEG2RAD);
+    *originY = radius * sin(sAngle * GCODE_DEG2RAD);
     tM.target.X = radius * cos(eAngle * GCODE_DEG2RAD);
     tM.target.Y = radius * sin(eAngle * GCODE_DEG2RAD);
   } else {
@@ -308,6 +310,8 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
       coefy = +1.0 * invert;
     }
 
+    *originX = pM.target.X + coefx * cos(angle * GCODE_DEG2RAD) * radComp.offset;
+    *originY = pM.target.Y + coefy * sin(angle * GCODE_DEG2RAD) * radComp.offset;
     tM.target.X += coefx * cos(angle * GCODE_DEG2RAD) * radComp.offset;
     tM.target.Y += coefy * sin(angle * GCODE_DEG2RAD) * radComp.offset;
   }
