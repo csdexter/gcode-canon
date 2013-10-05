@@ -55,7 +55,7 @@ void arc_math(double X, double Y, double oldX, double oldY, double *R,
 /* Coordinate math workhorse. Transforms X,Y,Z according to all information in
  * system and stores the result in system->X, system->Y, system->Z. */
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z);
-/* Returns the side of (x1,y1)->(x2,y2) (x3,y3) is on as radius compensation
+/* Returns the side of (x1,y1)->(x2,y2) (x3,y3) is on as a radius compensation
  * mode. */
 TGCodeRadCompMode vector_side_math(double x1, double y1, double x2, double y2,
     double x3, double y3);
@@ -68,5 +68,9 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec prevMove, TGCodeMoveSpec thisMove,
  * closer to prevMove.target */
 void intersection_math(double opX, double opY, TGCodeMoveSpec prevMove,
     double otX, double otY, TGCodeMoveSpec thisMove, double *iX, double *iY);
+/* Calculates whether prevMove->thisMove represents a corner towards or against
+ * the radius compensation side radComp. Returns true for towards. */
+bool inside_corner_math(double oX, double oY, TGCodeMoveSpec prevMove,
+    TGCodeMoveSpec thisMove, TGCodeCompSpec radComp);
 
 #endif /* GCODE_MATH_H_ */

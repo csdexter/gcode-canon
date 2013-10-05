@@ -456,3 +456,41 @@ void intersection_math(double opX, double opY, TGCodeMoveSpec prevMove,
     }
   }
 }
+
+bool inside_corner_math(double oX, double oY, TGCodeMoveSpec prevMove,
+    TGCodeMoveSpec thisMove, TGCodeCompSpec radComp) {
+  TGCodeRadCompMode side;
+  double x1, y1, x2, y2, x3, y3;
+
+  if(prevMove.isArc || thisMove.isArc) {
+    /* At least one is an arc, apply generic calculations */
+    TGCodeMoveSpec tMove = prevMove, cpMove;
+    double dummy;
+
+    tMove.target.X = oX;
+    tMove.target.Y = oY;
+    cpMove = offset_math(tMove, prevMove, radComp, &dummy, &dummy);
+    tMove = offset_math(prevMove, thisMove, radComp, &x3, &y3);
+
+    x1 = prevMove.target.X;
+    y1 = prevMove.target.Y;
+    x2 = cpMove.target.X;
+    y2 = cpMove.target.Y;
+  } else {
+    /* Both are lines, apply simplified calculations */
+    x1 = oX;
+    y1 = oY;
+    x2 = prevMove.target.X;
+    y2 = prevMove.target.Y;
+    x3 = thisMove.target.X;
+    y3 = thisMove.target.Y;
+  }
+
+  side = vector_side_math(x1, y1, x2, y2, x3, y3);
+  if(side == GCODE_COMP_RAD_OFF || side == radComp.mode)
+    /* If the third point is actually on the line, we want it treated like
+     * an inside corner: no joining arcs please */
+    return true;
+  else
+    return false;
+}
