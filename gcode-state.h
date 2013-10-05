@@ -106,6 +106,11 @@ typedef enum {
 } TGCodeRadCompMode;
 
 typedef enum {
+  GCODE_CORNER_CHAMFER = 25,
+  GCODE_CORNER_FILLET = 26
+} TGCodeCornerMode;
+
+typedef enum {
   GCODE_SPINDLE_CW = 3,
   GCODE_SPINDLE_CCW = 4,
   GCODE_SPINDLE_STOP = 5
@@ -229,6 +234,7 @@ typedef struct {
   TGCodePlaneMode plane;
   TGCodeUnitsMode units;
   TGCodeCompSpec radComp, lenComp;
+  TGCodeCornerMode corner;
   TGCodeCurrentSystem current, oldCurrent;
   TGCodeMirrorSpec mirror;
   TGCodeRotationSpec rotation;
@@ -273,10 +279,10 @@ typedef struct {
 bool init_gcode_state(void *data);
 /* Process one line of G-Code. Note that line has already been sanitized by
  * gcode-input. Returns false on error */
+bool update_gcode_state(char *line);
 /* Returns string pointing at the first non-numeric-value character after the
  * initial pointer value. */
 char *skip_gcode_digits(char *string);
-bool update_gcode_state(char *line);
 /* Read from line and interpret as number transparently handling parameter
  * references; return number */
 double read_gcode_real(char *line);

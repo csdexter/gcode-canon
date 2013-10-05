@@ -2,6 +2,5 @@
 * add rotational axes (A, B, C)
 * fix all remaining weird stuff in NOTES (such as being unable to parse G00.000 as G00)
 * complete the testing suite
-* implement extra math for radius compensation in gcode-math
 * implement radius compensation logic in move_machine_queue
 * start adding kinematic stuff around move_machine_queue (acceleration planning, contour control etc.)

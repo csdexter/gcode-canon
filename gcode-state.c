@@ -42,6 +42,7 @@ static TGCodeState currentGCodeState = {
       GCODE_COMP_LEN_OFF,
       0.0
     },
+    GCODE_CORNER_CHAMFER,
     GCODE_WCS_1,
     GCODE_WCS_1,
     {
@@ -246,6 +247,8 @@ bool update_gcode_state(char *line) {
           currentGCodeState.T);
     }
   }
+  if((arg = have_gcode_word('G', 2, GCODE_CORNER_CHAMFER, GCODE_CORNER_FILLET)))
+    currentGCodeState.system.corner = arg;
   if((arg = have_gcode_word('G', 3, GCODE_COMP_LEN_OFF, GCODE_COMP_LEN_N,
                             GCODE_COMP_LEN_P))) {
     currentGCodeState.system.lenComp.mode = arg;
