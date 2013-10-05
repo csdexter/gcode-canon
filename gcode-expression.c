@@ -393,7 +393,7 @@ void evaluate_unary_expression(char *line) {
   uint8_t fni;
   double arg, sar;
 
-  while(c = *(line++)) {
+  while((c = *(line++))) {
     if((isdigit(c) || c == '-') && seenWord) {
       line = skip_gcode_digits(line);
       seenWord = false;
