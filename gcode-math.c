@@ -107,7 +107,7 @@ double mirroring_math(double input, double previous, double *original, bool mirr
   return previous;
 }
 
-void arc_math(double X, double Y, double oldX, double oldY, double *R,
+double arc_math(double X, double Y, double oldX, double oldY, double *R,
     double *I, double *J, double *K, bool invert) {
   if(!isnan(*R)) {
     double d = hypot(oldX - X, oldY - Y);
@@ -115,6 +115,13 @@ void arc_math(double X, double Y, double oldX, double oldY, double *R,
     *J = (Y - oldY) / 2 + (invert ? 1 : -1) * sqrt(*R * *R - d * d / 4) * (X - oldX) / d;
     *K = 0;
   } else *R = hypot(*I, *J);
+
+  double start = atan2(oldY - *J, oldX - *I);
+  double end = atan2(Y - *J, X - *I);
+  if ((start >= end && invert) || (end > start && !invert))
+    return fabs(start - end) * R;
+  else
+    return (2 * M_PI - fabs(start - end)) * R;
 }
 
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {

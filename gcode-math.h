@@ -49,8 +49,8 @@ double scaling_math(double input, double origin, double factor);
 double mirroring_math(double input, double previous, double *original,
     bool mirrored);
 /* Calculates I,J,K from R or R from I,J,K given start and end of arc. Invert
- * is ccw XOR the_other_way_around. */
-void arc_math(double X, double Y, double oldX, double oldY, double *R,
+ * is ccw XOR the_other_way_around. Returns linear length of arc. */
+double arc_math(double X, double Y, double oldX, double oldY, double *R,
     double *I, double *J, double *K, bool invert);
 /* Coordinate math workhorse. Transforms X,Y,Z according to all information in
  * system and stores the result in system->X, system->Y, system->Z. */

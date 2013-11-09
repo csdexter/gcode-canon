@@ -28,13 +28,11 @@ static TGCodeMachineState currentMachineState;
 static bool stillRunning, servoPower;
 
 
-double _adjust_feed(TGCodeFeedMode mode, double F, double oldX, double oldY,
-    double oldZ, double newX, double newY, double newZ) {
+double _adjust_feed(TGCodeFeedMode mode, double F, double toGo) {
   switch(mode) {
     case GCODE_FEED_INVTIME:
       /* Whole distance in 1/F minutes, i.e. move at (distance * F) mm/min */
-      F *= sqrt(pow(newX - oldX, 2) + pow(newY - oldY, 2) +
-                pow(newZ - oldZ, 2));
+      F *= toGo;
       break;
     case GCODE_FEED_PERREVOLUTION:
       /* F mm per revolution, i.e. move at (S * F) mm/min */
@@ -99,7 +97,9 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
   move.target.X = X;
   move.target.Y = Y;
   move.target.Z = Z;
-  move.feedValue = _adjust_feed(feedMode, F, machineX, machineY, machineZ, X, Y, Z);
+  move.feedValue = _adjust_feed(feedMode, F, sqrt(pow(machineX - X, 2) +
+                                                  pow(machineY - Y, 2) +
+                                                  pow(machineZ - Z, 2)));
 
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
     GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", X, Y, Z)
@@ -115,6 +115,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
     TGCodeFeedMode feedMode, double F) {
   bool theLongWay = false;
   TGCodeMoveSpec move;
+  double arclen;
 
   /* Use the >180deg arc on user request */
   if(!isnan(R) && signbit(R)) {
@@ -127,17 +128,20 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
       X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
       Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
       if(currentMachineState.mirrorX ^ currentMachineState.mirrorY) ccw = !ccw;
-      arc_math(X, Y, machineX, machineY, &R, &I, &J, &K, ccw ^ theLongWay);
+      arclen = arc_math(X, Y, machineX, machineY, &R, &I, &J, &K, ccw ^ theLongWay);
+      if(Z != machineZ) arclen = hypot(arclen, machineZ - Z);
       break;
     case GCODE_PLANE_ZX:
       X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
       if(currentMachineState.mirrorX) ccw = !ccw;
-      arc_math(Z, X, machineZ, machineX, &R, &K, &I, &J, ccw ^ theLongWay);
+      arclen = arc_math(Z, X, machineZ, machineX, &R, &K, &I, &J, ccw ^ theLongWay);
+      if(Y != machineY) arclen = hypot(arclen, machineY - Y);
       break;
     case GCODE_PLANE_YZ:
       Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
       if(currentMachineState.mirrorY) ccw = !ccw;
-      arc_math(Y, Z, machineY, machineZ, &R, &J, &K, &I, ccw ^ theLongWay);
+      arclen = arc_math(Y, Z, machineY, machineZ, &R, &J, &K, &I, ccw ^ theLongWay);
+      if(X != machineX) arclen = hypot(arclen, machineX - X);
       break;
   }
 
@@ -149,7 +153,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
   move.target.X = X;
   move.target.Y = Y;
   move.target.Z = Z;
-  move.feedValue = _adjust_feed(feedMode, F, machineX, machineY, machineZ, X, Y, Z);
+  move.feedValue = _adjust_feed(feedMode, F, arclen);
 
   GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4.0fmm/min",
               move.center.X, move.center.Y, move.center.Z, R,
