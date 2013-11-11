@@ -592,7 +592,7 @@ bool update_gcode_state(char *line) {
       case LINEAR:
         move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
                           currentGCodeState.system.Z, currentGCodeState.feedMode,
-                          currentGCodeState.F);
+                          currentGCodeState.F, currentGCodeState.system.radComp);
         break;
       case ARC:
         //TODO: implement full-circle as a repeat of arcs, add new move_machine_ call for that
@@ -601,7 +601,8 @@ bool update_gcode_state(char *line) {
                          currentGCodeState.J, currentGCodeState.K,
                          currentGCodeState.R, currentGCodeState.ccw,
                          currentGCodeState.system.plane,
-                         currentGCodeState.feedMode, currentGCodeState.F);
+                         currentGCodeState.feedMode, currentGCodeState.F,
+                         currentGCodeState.system.radComp);
         break;
       case CYCLE:
         /* Save contents of c[XYZ] to restore them when the cycle is done */
@@ -632,7 +633,8 @@ bool update_gcode_state(char *line) {
           move_machine_line(currentGCodeState.system.X,
                             currentGCodeState.system.Y,
                             currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
-                            GCODE_MACHINE_FEED_TRAVERSE);
+                            GCODE_MACHINE_FEED_TRAVERSE,
+                            currentGCodeState.system.radComp);
           /* Erase our tracks */
           if(currentGCodeState.system.absolute == GCODE_RELATIVE)
             currentGCodeState.R = 0; /* Since we're now at R */
@@ -733,7 +735,8 @@ bool update_gcode_state(char *line) {
       move_math(&currentGCodeState.system, NAN, NAN, lastZ);
       move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
                         currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
-                        GCODE_MACHINE_FEED_TRAVERSE);
+                        GCODE_MACHINE_FEED_TRAVERSE,
+                        currentGCodeState.system.radComp);
     }
 
     /* Restore contents of c[XYZ] to what they were during the cycle block */

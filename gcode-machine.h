@@ -54,14 +54,14 @@ bool move_machine_queue(void);
 /* Move to X,Y,Z-A,B,C at speed F. All axes move simultaneously for linear
  * interpolation */
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
-    double F);
+    double F, TGCodeCompSpec radComp);
 /* Move to X,Y,Z following an arc with the center at I,J,K, radius R and
  * running CCW if ccw is true, CW otherwise. Usually, one of I,J,K or R will be
  * NaN so the other will be extrapolated. CW/CCW is decided looking towards the
  * negative end of the axis perpendicular on plane */
 bool move_machine_arc(double X, double Y, double Z, double I, double J,
     double K, double R, bool ccw, TGCodePlaneMode plane,
-    TGCodeFeedMode feedMode, double F);
+    TGCodeFeedMode feedMode, double F, TGCodeCompSpec radComp);
 /* Executes either home & recalibrate, go to zero or return from zero going
  * through the point specified if any */
 bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z);
