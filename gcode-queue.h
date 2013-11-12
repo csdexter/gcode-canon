@@ -36,10 +36,7 @@ bool dequeue_move(TGCodeMoveSpec *move);
 uint8_t queue_size(void);
 /* Returns move at the head of the queue without modifying queue. If the queue
  * is empty, results are undefined */
-TGCodeMoveSpec peek_move_out(void);
-/* Returns move at the tail of the queue without modifying queue. If the queue
- * is empty, results are undefined */
-TGCodeMoveSpec peek_move_in(void);
+TGCodeMoveSpec peek_move(void);
 
 bool done_queue(void);
 
