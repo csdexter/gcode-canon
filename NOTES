@@ -68,3 +68,21 @@
  *         if(cmsc) cmsc = false, pop_parameters() [pop_parameters() calls commit internally]
  */
 }
+* initial per-axis movement queue records looked like this {
+  typedef enum {
+    AXIS_NOP,
+    AXIS_LINEAR,
+    AXIS_CIRCULAR_X,
+    AXIS_CIRCULAR_Y
+  } TGCodeAxisMovementSpec;
+  
+  typedef struct {
+    TGCodeAxisMovementSpec movementType;
+    bool isPositive; /* false for towards zero or CCW, true for away from zero or CW */
+    uint32_t targetSpeed; /* in steps/sec or Bresenham iterations/sec */
+    uint32_t stepsToGo; /* in steps */
+    uint32_t radius; /* in steps */
+    int32_t initialError; /* in steps */
+    // TODO: find minimum set of data needed for arcs and put it here
+  } TGCodeAxisSpec;
+}

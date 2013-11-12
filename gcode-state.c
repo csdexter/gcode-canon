@@ -587,7 +587,8 @@ bool update_gcode_state(char *line) {
       case RAPID:
         move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
                           currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
-                          GCODE_MACHINE_FEED_TRAVERSE);
+                          GCODE_MACHINE_FEED_TRAVERSE,
+                          currentGCodeState.system.radComp);
         break;
       case LINEAR:
         move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,

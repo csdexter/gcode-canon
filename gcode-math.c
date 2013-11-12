@@ -119,9 +119,9 @@ double arc_math(double X, double Y, double oldX, double oldY, double *R,
   double start = atan2(oldY - *J, oldX - *I);
   double end = atan2(Y - *J, X - *I);
   if ((start >= end && invert) || (end > start && !invert))
-    return fabs(start - end) * R;
+    return fabs(start - end) * *R;
   else
-    return (2 * M_PI - fabs(start - end)) * R;
+    return (2 * M_PI - fabs(start - end)) * *R;
 }
 
 void move_math(TGCodeCoordinateInfo *system, double X, double Y, double Z) {
@@ -249,7 +249,11 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
   double invert;
 
   /* Do we actually have anything to do here? */
-  if(radComp.mode == GCODE_COMP_RAD_OFF) return tM;
+  if(radComp.mode == GCODE_COMP_RAD_OFF) {
+    *originX = pM.target.X;
+    *originY = pM.target.Y;
+    return tM;
+  }
 
   if(tM.isArc) {
     double sAngle = atan2(pM.target.Y - tM.center.Y,
@@ -466,6 +470,7 @@ void intersection_math(double opX, double opY, TGCodeMoveSpec prevMove,
 
 bool inside_corner_math(double oX, double oY, TGCodeMoveSpec prevMove,
     TGCodeMoveSpec thisMove, TGCodeCompSpec radComp) {
+  //TODO: handle radComp changes between prevMove and thisMove
   TGCodeRadCompMode side;
   double x1, y1, x2, y2, x3, y3;
 

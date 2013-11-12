@@ -26,7 +26,6 @@ typedef struct {
   TGCodeCompSpec radComp;
 } TGCodeMoveSpec;
 
-
 /* Start the show */
 void init_queue(void);
 /* Adds move to the tail of the queue, returns false if queue is full */
@@ -37,7 +36,11 @@ bool dequeue_move(TGCodeMoveSpec *move);
 uint8_t queue_size(void);
 /* Returns move at the head of the queue without modifying queue. If the queue
  * is empty, results are undefined */
-TGCodeMoveSpec peek_move(void);
+TGCodeMoveSpec peek_move_out(void);
+/* Returns move at the tail of the queue without modifying queue. If the queue
+ * is empty, results are undefined */
+TGCodeMoveSpec peek_move_in(void);
+
 bool done_queue(void);
 
 #endif /* GCODE_QUEUE_H_ */
