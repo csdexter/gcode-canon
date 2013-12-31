@@ -113,19 +113,15 @@ void init_queue(void) {
 }
 
 bool enqueue_move(TGCodeMoveSpec move) {
-  if(move.radComp.mode != GCODE_COMP_RAD_OFF) {
-    if(bufferValid) {
-      _do_radcomp(move);
-    }
+  if(bufferValid) _do_radcomp(move);
 
+  if(move.radComp.mode != GCODE_COMP_RAD_OFF) {
     buffer = move;
     bufferValid = true;
 
     return true;
   } else {
     if(bufferValid) {
-      _do_radcomp(move);
-
       /* Returning to non-compensated mode */
       bufferValid = false;
     }
