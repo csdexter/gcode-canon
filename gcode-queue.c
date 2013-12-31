@@ -64,16 +64,19 @@ static void _do_radcomp(TGCodeMoveSpec move) {
   bool arcFlag;
 
   movep.target = lastRawTarget;
-  /* (lastCompTarget -> movep) is the first segment */
+  /* (lastRawTarget -> movep) is the first segment */
   movep = offset_math(movep, buffer, buffer.radComp, &opX, &opY);
   /* (movep -> movec) is the second segment, as if radComp were constant,
    * we only need the starting point anyway. */
   movec = offset_math(buffer, move, buffer.radComp, &ocX, &ocY);
 
   // TODO: bring currentGCodeState.system.corner here
-  arcFlag = /* USE_ARCS && !*/ inside_corner_math(lastRawTarget.X,
-                                                  lastRawTarget.Y, buffer,
-                                                  move, buffer.radComp);
+  // TODO: the logic here is somehow broken (inverting fixes G42 and breaks
+  //       G41) while in both cases it injects a phantom freak move when
+  //       switching to G40
+  arcFlag = /* USE_ARCS && */ ! inside_corner_math(lastRawTarget.X,
+                                                   lastRawTarget.Y, buffer,
+                                                   move, buffer.radComp);
   if(!arcFlag)
     /* Trim/extend the first move to the intersection point */
     intersection_math(opX, opY, movep, ocX, ocY, movec, &movep.target.X,

@@ -303,19 +303,22 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
     else
       invert = -1.0;
 
-    if(angle >= 0 && angle <= 90) {
+    /* The range extension by 0.0001 comes from RS274NGC which postulates that
+     * any floating-point value that is within 0.0001 of an integer IS that
+     * integer. */
+    if(angle >= -0.0001 && angle <= 90) {
       angle = 90 - angle;
       coefx = -1.0 * invert;
       coefy = +1.0 * invert;
-    } else if(angle > 90 && angle <= 180) {
+    } else if(angle > 90 && angle <= 180.0001) {
       angle -= 90;
       coefx = -1.0 * invert;
       coefy = -1.0 * invert;
-    } else if(angle > -180 && angle <= -90) {
+    } else if(angle > -180.0001 && angle <= -90) {
       angle = -90 - angle;
       coefx = +1.0 * invert;
       coefy = -1.0 * invert;
-    } else if(angle > -90 && angle < 0) {
+    } else if(angle > -90 && angle < 0.0001) {
       angle += 90;
       coefx = +1.0 * invert;
       coefy = +1.0 * invert;
