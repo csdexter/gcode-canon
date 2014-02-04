@@ -585,15 +585,20 @@ bool update_gcode_state(char *line) {
 
     switch(currentGCodeState.motionMode) {
       case RAPID:
-        move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
+        move_machine_line(currentGCodeState.system.X,
+                          currentGCodeState.system.Y,
                           currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
                           GCODE_MACHINE_FEED_TRAVERSE,
-                          currentGCodeState.system.radComp);
+                          currentGCodeState.system.radComp,
+                          currentGCodeState.system.corner);
         break;
       case LINEAR:
-        move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
-                          currentGCodeState.system.Z, currentGCodeState.feedMode,
-                          currentGCodeState.F, currentGCodeState.system.radComp);
+        move_machine_line(currentGCodeState.system.X,
+                          currentGCodeState.system.Y,
+                          currentGCodeState.system.Z,
+                          currentGCodeState.feedMode,
+                          currentGCodeState.F, currentGCodeState.system.radComp,
+                          currentGCodeState.system.corner);
         break;
       case ARC:
         //TODO: implement full-circle as a repeat of arcs, add new move_machine_ call for that
@@ -603,7 +608,8 @@ bool update_gcode_state(char *line) {
                          currentGCodeState.R, currentGCodeState.ccw,
                          currentGCodeState.system.plane,
                          currentGCodeState.feedMode, currentGCodeState.F,
-                         currentGCodeState.system.radComp);
+                         currentGCodeState.system.radComp,
+                         currentGCodeState.system.corner);
         break;
       case CYCLE:
         /* Save contents of c[XYZ] to restore them when the cycle is done */

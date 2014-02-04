@@ -86,7 +86,7 @@ bool move_machine_queue(void) {
 }
 
 bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
-    double F, TGCodeCompSpec radComp) {
+    double F, TGCodeCompSpec radComp, TGCodeCornerMode corner) {
   TGCodeMoveSpec move;
 
   /* Check for and apply machine mirroring */
@@ -101,6 +101,7 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
                                                   pow(machineY - Y, 2) +
                                                   pow(machineZ - Z, 2)));
   move.radComp = radComp;
+  move.corner = corner;
 
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
     GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", X, Y, Z)
@@ -113,7 +114,8 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
 
 bool move_machine_arc(double X, double Y, double Z, double I, double J,
     double K, double R, bool ccw, TGCodePlaneMode plane,
-    TGCodeFeedMode feedMode, double F, TGCodeCompSpec radComp) {
+    TGCodeFeedMode feedMode, double F, TGCodeCompSpec radComp,
+    TGCodeCornerMode corner) {
   bool theLongWay = false;
   TGCodeMoveSpec move;
   double arclen;
@@ -156,6 +158,7 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
   move.target.Z = Z;
   move.feedValue = _adjust_feed(feedMode, F, arclen);
   move.radComp = radComp;
+  move.corner = corner;
 
   GCODE_DEBUG("Circular move around C(%4.2fmm, %4.2fmm, %4.2fmm) of radius %4.2fmm in plane %s %s ending at V(%4.2fmm, %4.2fmm, %4.2fmm) at %4.0fmm/min",
               move.center.X, move.center.Y, move.center.Z, R,

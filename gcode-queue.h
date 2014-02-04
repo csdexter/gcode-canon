@@ -24,6 +24,7 @@ typedef struct {
   bool ccw;
   double feedValue;
   TGCodeCompSpec radComp;
+  TGCodeCornerMode corner;
 } TGCodeMoveSpec;
 
 /* Start the show */
