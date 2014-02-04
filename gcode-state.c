@@ -641,7 +641,8 @@ bool update_gcode_state(char *line) {
                             currentGCodeState.system.Y,
                             currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
                             GCODE_MACHINE_FEED_TRAVERSE,
-                            currentGCodeState.system.radComp);
+                            currentGCodeState.system.radComp,
+                            currentGCodeState.system.corner);
           /* Erase our tracks */
           if(currentGCodeState.system.absolute == GCODE_RELATIVE)
             currentGCodeState.R = 0; /* Since we're now at R */
@@ -743,7 +744,8 @@ bool update_gcode_state(char *line) {
       move_machine_line(currentGCodeState.system.X, currentGCodeState.system.Y,
                         currentGCodeState.system.Z, GCODE_FEED_PERMINUTE,
                         GCODE_MACHINE_FEED_TRAVERSE,
-                        currentGCodeState.system.radComp);
+                        currentGCodeState.system.radComp,
+                        currentGCodeState.system.corner);
     }
 
     /* Restore contents of c[XYZ] to what they were during the cycle block */

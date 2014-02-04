@@ -203,7 +203,7 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
   noComp.mode = GCODE_COMP_RAD_OFF;
 
   move_machine_line(X, Y, Z, GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE,
-                    noComp);
+                    noComp, GCODE_CORNER_CHAMFER);
 
   switch(mode) {
     case GCODE_CYCLE_HOME:
@@ -212,19 +212,20 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
                         fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y),
                         fetch_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z),
                         GCODE_FEED_PERMINUTE,
-                        fetch_parameter(GCODE_PARM_FEED_HOME_X), noComp);
+                        fetch_parameter(GCODE_PARM_FEED_HOME_X), noComp,
+                        GCODE_CORNER_CHAMFER);
       break;
     case GCODE_CYCLE_RETURN:
       move_machine_line(beforeHomeX, beforeHomeY, beforeHomeZ,
                         GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE,
-                        noComp);
+                        noComp, GCODE_CORNER_CHAMFER);
       break;
     case GCODE_CYCLE_ZERO:
       move_machine_line(fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_X),
                         fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Y),
                         fetch_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Z),
                         GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE,
-                        noComp);
+                        noComp, GCODE_CORNER_CHAMFER);
       break;
     default:
       return false;
