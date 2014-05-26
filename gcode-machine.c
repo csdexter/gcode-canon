@@ -22,7 +22,7 @@
 
 
 static double machineX, machineY, machineZ, noMirrorX, noMirrorY, beforeHomeX,
-    beforeHomeY, beforeHomeZ;
+    beforeHomeY, beforeHomeZ, oldX, oldY, oldZ;
 static uint32_t spindleSpeed;
 static TGCodeMachineState currentMachineState;
 static bool stillRunning, servoPower;
@@ -49,7 +49,7 @@ double _adjust_feed(TGCodeFeedMode mode, double F, double toGo) {
 
 bool init_machine(void *data) {
   machineX = machineY = machineZ = noMirrorX = noMirrorY = beforeHomeX =
-      beforeHomeY = beforeHomeZ = 0.0;
+      beforeHomeY = beforeHomeZ = oldX = oldY = oldZ = 0.0;
   currentMachineState.flags = 0x00;
   set_spindle_speed_machine(GCODE_MACHINE_LOWEST_RPM);
   enable_override_machine(GCODE_OVERRIDE_ON);
@@ -94,9 +94,9 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
   Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
 
   move.isArc = false;
-  move.target.X = X;
-  move.target.Y = Y;
-  move.target.Z = Z;
+  move.target.X = oldX = X;
+  move.target.Y = oldY = Y;
+  move.target.Z = oldZ = Z;
   move.feedValue = _adjust_feed(feedMode, F, sqrt(pow(machineX - X, 2) +
                                                   pow(machineY - Y, 2) +
                                                   pow(machineZ - Z, 2)));
@@ -131,31 +131,31 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
       X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
       Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
       if(currentMachineState.mirrorX ^ currentMachineState.mirrorY) ccw = !ccw;
-      arclen = arc_math(X, Y, machineX, machineY, &R, &I, &J, &K, ccw ^ theLongWay);
+      arclen = arc_math(X, Y, oldX, oldY, &R, &I, &J, &K, ccw ^ theLongWay);
       if(Z != machineZ) arclen = hypot(arclen, machineZ - Z);
       break;
     case GCODE_PLANE_ZX:
       X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
       if(currentMachineState.mirrorX) ccw = !ccw;
-      arclen = arc_math(Z, X, machineZ, machineX, &R, &K, &I, &J, ccw ^ theLongWay);
+      arclen = arc_math(Z, X, oldZ, oldX, &R, &K, &I, &J, ccw ^ theLongWay);
       if(Y != machineY) arclen = hypot(arclen, machineY - Y);
       break;
     case GCODE_PLANE_YZ:
       Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
       if(currentMachineState.mirrorY) ccw = !ccw;
-      arclen = arc_math(Y, Z, machineY, machineZ, &R, &J, &K, &I, ccw ^ theLongWay);
+      arclen = arc_math(Y, Z, oldY, oldZ, &R, &J, &K, &I, ccw ^ theLongWay);
       if(X != machineX) arclen = hypot(arclen, machineX - X);
       break;
   }
 
   move.isArc = true;
-  move.center.X = machineX + I;
-  move.center.Y = machineY + J;
-  move.center.Z = machineZ + K;
+  move.center.X = oldX + I;
+  move.center.Y = oldY + J;
+  move.center.Z = oldZ + K;
   move.ccw = ccw;
-  move.target.X = X;
-  move.target.Y = Y;
-  move.target.Z = Z;
+  move.target.X = oldX = X;
+  move.target.Y = oldY = Y;
+  move.target.Z = oldZ = Z;
   move.feedValue = _adjust_feed(feedMode, F, arclen);
   move.radComp = radComp;
   move.corner = corner;
