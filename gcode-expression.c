@@ -264,16 +264,18 @@ static double _do_operation(TGCodeExpressionOperator op, double left,
     case GCODE_EO_MINUS:
       return left - right;
     case GCODE_EO_AND:
-      /* According to RS274NGC, everything closer than 0.0001 to an integer IS
-       * that integer. In our case, 0.0 */
-      if(fabs(left) > 0.0001 && fabs(right) > 0.0001) return +1.0E+0;
+      if(fabs(left) > GCODE_INTEGER_THRESHOLD &&
+         fabs(right) > GCODE_INTEGER_THRESHOLD) return +1.0E+0;
       else return +0.0E+0;
     case GCODE_EO_OR:
-      if(fabs(left) > 0.0001 || fabs(right) > 0.0001) return +1.0E+0;
+      if(fabs(left) > GCODE_INTEGER_THRESHOLD ||
+         fabs(right) > GCODE_INTEGER_THRESHOLD) return +1.0E+0;
       else return +0.0E+0;
     case GCODE_EO_XOR:
-      if((fabs(left) > 0.0001 || fabs(right) > 0.0001) &&
-        !(fabs(left) > 0.0001 && fabs(right) > 0.0001)) return +1.0E+0;
+      if((fabs(left) > GCODE_INTEGER_THRESHOLD ||
+          fabs(right) > GCODE_INTEGER_THRESHOLD) &&
+         !(fabs(left) > GCODE_INTEGER_THRESHOLD &&
+           fabs(right) > GCODE_INTEGER_THRESHOLD)) return +1.0E+0;
       else return +0.0E+0;
     case GCODE_EO_STAR:
       return left * right;

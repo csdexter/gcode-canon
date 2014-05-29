@@ -25,7 +25,7 @@
 // TODO: magic values within the valid range are an accident waiting to happen!
 /* 1050mm/sec, none of the hardware we're targeting is that fast so safe to use as flag */
 #define GCODE_MACHINE_FEED_TRAVERSE 0xF618U
-#define GCODE_MACHINE_POSITION(x, y, z) GCODE_DEBUG_RAW("MPOS,%4.2f,%4.2f,%4.2f", x, y, z)
+#define GCODE_MACHINE_POSITION(pos) GCODE_DEBUG_RAW("MPOS,%4.2f,%4.2f,%4.2f", pos.X, pos.Y, pos.Z)
 #define GCODE_MACHINE_PF_EXACTSTOP 0x04
 #define GCODE_MACHINE_PF_OVERRIDES 0x02
 #define GCODE_MACHINE_PF_FEEDHOLD 0x01

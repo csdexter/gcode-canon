@@ -21,8 +21,8 @@
 #include "gcode-math.h"
 
 
-static double machineX, machineY, machineZ, noMirrorX, noMirrorY, beforeHomeX,
-    beforeHomeY, beforeHomeZ, oldX, oldY, oldZ;
+static double noMirrorX, noMirrorY;
+static TGCodeOffsetSpec old, current, beforeHome;
 static uint32_t spindleSpeed;
 static TGCodeMachineState currentMachineState;
 static bool stillRunning, servoPower;
@@ -48,8 +48,8 @@ double _adjust_feed(TGCodeFeedMode mode, double F, double toGo) {
 }
 
 bool init_machine(void *data) {
-  machineX = machineY = machineZ = noMirrorX = noMirrorY = beforeHomeX =
-      beforeHomeY = beforeHomeZ = oldX = oldY = oldZ = 0.0;
+  current.X = current.Y = current.Z = noMirrorX = noMirrorY = beforeHome.X =
+      beforeHome.Y = beforeHome.Z = old.X = old.Y = old.Z = 0.0;
   currentMachineState.flags = 0x00;
   set_spindle_speed_machine(GCODE_MACHINE_LOWEST_RPM);
   enable_override_machine(GCODE_OVERRIDE_ON);
@@ -57,12 +57,12 @@ bool init_machine(void *data) {
   enable_power_machine(GCODE_SERVO_ON);
   set_parameter(GCODE_PARM_CURRENT_PALLET, 1);
   /* By default our home and zero positions are at (0, 0, 0) */
-  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X, machineX);
-  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y, machineY);
-  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z, machineZ);
-  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_X, machineX);
-  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Y, machineY);
-  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Z, machineZ);
+  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_X, current.X);
+  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Y, current.Y);
+  set_parameter(GCODE_PARM_FIRST_HOME + GCODE_AXIS_Z, current.Z);
+  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_X, current.X);
+  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Y, current.Y);
+  set_parameter(GCODE_PARM_FIRST_ZERO + GCODE_AXIS_Z, current.Z);
 
   GCODE_DEBUG("Machine is up");
 
@@ -75,11 +75,11 @@ bool move_machine_queue(void) {
   if(!queue_size() || !servoPower) return false;
   else {
     dequeue_move(&movec);
-    machineX = movec.target.X;
-    machineY = movec.target.Y;
-    machineZ = movec.target.Z;
+    current.X = movec.target.X;
+    current.Y = movec.target.Y;
+    current.Z = movec.target.Z;
 
-    GCODE_MACHINE_POSITION(machineX, machineY, machineZ);
+    GCODE_MACHINE_POSITION(current);
 
     return true;
   }
@@ -90,16 +90,21 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
   TGCodeMoveSpec move;
 
   /* Check for and apply machine mirroring */
-  X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
-  Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
+  X = mirroring_math(X, current.X, &noMirrorX, currentMachineState.mirrorX);
+  Y = mirroring_math(Y, current.Y, &noMirrorY, currentMachineState.mirrorY);
 
   move.isArc = false;
-  move.target.X = oldX = X;
-  move.target.Y = oldY = Y;
-  move.target.Z = oldZ = Z;
-  move.feedValue = _adjust_feed(feedMode, F, sqrt(pow(machineX - X, 2) +
-                                                  pow(machineY - Y, 2) +
-                                                  pow(machineZ - Z, 2)));
+
+  move.target.X = X;
+  move.target.Y = Y;
+  move.target.Z = Z;
+  move.axesMoving.X = moving_axis_math(old.X, move.target.X);
+  move.axesMoving.Y = moving_axis_math(old.Y, move.target.Y);
+  move.axesMoving.Z = moving_axis_math(old.Z, move.target.Z);
+  old = move.target;
+  move.feedValue = _adjust_feed(feedMode, F, sqrt(pow(current.X - X, 2) +
+                                                  pow(current.Y - Y, 2) +
+                                                  pow(current.Z - Z, 2)));
   move.radComp = radComp;
   move.corner = corner;
 
@@ -128,34 +133,38 @@ bool move_machine_arc(double X, double Y, double Z, double I, double J,
 
   switch(plane) {
     case GCODE_PLANE_XY:
-      X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
-      Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
+      X = mirroring_math(X, current.X, &noMirrorX, currentMachineState.mirrorX);
+      Y = mirroring_math(Y, current.Y, &noMirrorY, currentMachineState.mirrorY);
       if(currentMachineState.mirrorX ^ currentMachineState.mirrorY) ccw = !ccw;
-      arclen = arc_math(X, Y, oldX, oldY, &R, &I, &J, &K, ccw ^ theLongWay);
-      if(Z != machineZ) arclen = hypot(arclen, machineZ - Z);
+      arclen = arc_math(X, Y, old.X, old.Y, &R, &I, &J, &K, ccw ^ theLongWay);
+      if(Z != current.Z) arclen = hypot(arclen, current.Z - Z);
       break;
     case GCODE_PLANE_ZX:
-      X = mirroring_math(X, machineX, &noMirrorX, currentMachineState.mirrorX);
+      X = mirroring_math(X, current.X, &noMirrorX, currentMachineState.mirrorX);
       if(currentMachineState.mirrorX) ccw = !ccw;
-      arclen = arc_math(Z, X, oldZ, oldX, &R, &K, &I, &J, ccw ^ theLongWay);
-      if(Y != machineY) arclen = hypot(arclen, machineY - Y);
+      arclen = arc_math(Z, X, old.Z, old.X, &R, &K, &I, &J, ccw ^ theLongWay);
+      if(Y != current.Y) arclen = hypot(arclen, current.Y - Y);
       break;
     case GCODE_PLANE_YZ:
-      Y = mirroring_math(Y, machineY, &noMirrorY, currentMachineState.mirrorY);
+      Y = mirroring_math(Y, current.Y, &noMirrorY, currentMachineState.mirrorY);
       if(currentMachineState.mirrorY) ccw = !ccw;
-      arclen = arc_math(Y, Z, oldY, oldZ, &R, &J, &K, &I, ccw ^ theLongWay);
-      if(X != machineX) arclen = hypot(arclen, machineX - X);
+      arclen = arc_math(Y, Z, old.Y, old.Z, &R, &J, &K, &I, ccw ^ theLongWay);
+      if(X != current.X) arclen = hypot(arclen, current.X - X);
       break;
   }
 
   move.isArc = true;
-  move.center.X = oldX + I;
-  move.center.Y = oldY + J;
-  move.center.Z = oldZ + K;
+  move.center.X = old.X + I;
+  move.center.Y = old.Y + J;
+  move.center.Z = old.Z + K;
   move.ccw = ccw;
-  move.target.X = oldX = X;
-  move.target.Y = oldY = Y;
-  move.target.Z = oldZ = Z;
+  move.target.X = X;
+  move.target.Y = Y;
+  move.target.Z = Z;
+  move.axesMoving.X = moving_axis_math(old.X, move.target.X);
+  move.axesMoving.Y = moving_axis_math(old.Y, move.target.Y);
+  move.axesMoving.Z = moving_axis_math(old.Z, move.target.Z);
+  old = move.target;
   move.feedValue = _adjust_feed(feedMode, F, arclen);
   move.radComp = radComp;
   move.corner = corner;
@@ -177,25 +186,21 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
   switch(mode) {
     case GCODE_CYCLE_HOME:
       GCODE_DEBUG("Home and recalibrate cycle for axes: %s%s%s",
-                  (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y",
-                  (Z == machineZ) ? "" : "Z");
-      beforeHomeX = machineX;
-      beforeHomeY = machineY;
-      beforeHomeZ = machineZ;
+                  (X == current.X) ? "" : "X", (Y == current.Y) ? "" : "Y",
+                  (Z == current.Z) ? "" : "Z");
+      beforeHome = current;
       break;
     case GCODE_CYCLE_RETURN:
       GCODE_DEBUG("Return from reference point cycle for axes: %s%s%s",
-                  (X == machineX) ? "" : "X", (Y == machineY) ? "" : "Y",
-                  (Z == machineZ) ? "" : "Z");
+                  (X == current.X) ? "" : "X", (Y == current.Y) ? "" : "Y",
+                  (Z == current.Z) ? "" : "Z");
       break;
     case GCODE_CYCLE_ZERO:
       GCODE_DEBUG("Go to zero cycle for axes: %s%s%s",
-                  (X == machineX) ? "" : "X",
-                  (Y == machineY) ? "" : "Y",
-                  (Z == machineZ) ? "" : "Z");
-      beforeHomeX = machineX;
-      beforeHomeY = machineY;
-      beforeHomeZ = machineZ;
+                  (X == current.X) ? "" : "X",
+                  (Y == current.Y) ? "" : "Y",
+                  (Z == current.Z) ? "" : "Z");
+      beforeHome = current;
       break;
     default:
       return false;
@@ -216,7 +221,7 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
                         GCODE_CORNER_CHAMFER);
       break;
     case GCODE_CYCLE_RETURN:
-      move_machine_line(beforeHomeX, beforeHomeY, beforeHomeZ,
+      move_machine_line(beforeHome.X, beforeHome.Y, beforeHome.Z,
                         GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE,
                         noComp, GCODE_CORNER_CHAMFER);
       break;
@@ -247,7 +252,7 @@ bool move_machine_aux(TGCodeAuxiliaryMachine mode, uint32_t P) {
       break;
     case GCODE_RETRACT_Z:
       //TODO: this is wrong, should be Zmax instead or thereabouts
-      machineZ = 0;
+      current.Z = 0;
       GCODE_DEBUG("Z-axis retracted/parked");
       break;
     case GCODE_APC_1:
@@ -417,8 +422,8 @@ bool enable_mirror_machine(TGCodeMirrorMachine mode) {
     currentMachineState.mirrorY = false;
   }
 
-  noMirrorX = machineX;
-  noMirrorY = machineY;
+  noMirrorX = current.X;
+  noMirrorY = current.Y;
 
   set_parameter(
       GCODE_PARM_BITFIELD2,

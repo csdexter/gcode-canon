@@ -72,5 +72,8 @@ void intersection_math(double opX, double opY, TGCodeMoveSpec prevMove,
  * the radius compensation side radComp. Returns true for towards. */
 bool inside_corner_math(double oX, double oY, TGCodeMoveSpec prevMove,
     TGCodeMoveSpec thisMove, TGCodeCompSpec radComp);
+/* Return true if oX and nX differ by more than 0.0001 (a hundred times the
+ * precision of our machine) */
+bool moving_axis_math(double oX, double nX);
 
 #endif /* GCODE_MATH_H_ */

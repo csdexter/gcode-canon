@@ -70,5 +70,10 @@
 /* How many moves will we ever queue before executing them */
 #define GCODE_LOOKAHEAD_DEPTH 8
 
+/* RS274NGC postulates that any floating-point value that is within 0.0001 of an
+ * integer, IS that integer for all intents and purposes where integers are
+ * expected. */
+#define GCODE_INTEGER_THRESHOLD 0.0001
+
 
 #endif /* GCODE_COMMONS_H_ */

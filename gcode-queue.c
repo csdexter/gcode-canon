@@ -35,6 +35,10 @@ static bool _enqueue_nonull_move(TGCodeMoveSpec move, uint8_t where) {
   * Since the data we previously fed in went through the same transformations
   * and obeys the same limitations of the storage type, we can safely conclude
   * we'll always be comparing apples to apples. */
+#ifdef DEBUG
+  printf("Asked to enqueue (%4.2f, %4.2f, %4.2f)\n", move.target.X, move.target.Y, move.target.Z);
+#endif
+
   if(memcmp(&lastCompTarget, &move.target, sizeof(TGCodeOffsetSpec))) {
     queue[qHead] = move;
     qHead = where;
@@ -63,12 +67,26 @@ static void _do_radcomp(TGCodeMoveSpec move) {
   TGCodeMoveSpec movep, movec;
   bool arcFlag;
 
+#ifdef DEBUG
+  GCODE_DEBUG("Asked to compensate before (%4.2f, %4.2f, %4.2f)", move.target.X, move.target.Y, move.target.Z);
+#endif
+
   movep.target = lastRawTarget;
-  /* (lastRawTarget -> movep) is the first segment */
+#ifdef DEBUG
+  GCODE_DEBUG("Natural previous (%4.2f, %4.2f)->(%4.2f, %4.2f)", movep.target.X, movep.target.Y, buffer.target.X, buffer.target.Y);
+#endif
+  /* (lastRawTarget -> buffer) is the first segment */
   movep = offset_math(movep, buffer, buffer.radComp, &opX, &opY);
-  /* (movep -> movec) is the second segment, as if radComp were constant,
+#ifdef DEBUG
+  GCODE_DEBUG("Compensated previous (%4.2f, %4.2f)->(%4.2f, %4.2f)", opX, opY, movep.target.X, movep.target.Y);
+  GCODE_DEBUG("Natural current (%4.2f, %4.2f)->(%4.2f, %4.2f)", buffer.target.X, buffer.target.Y, move.target.X, move.target.Y);
+#endif
+  /* (buffer -> move) is the second segment, as if radComp were constant,
    * we only need the starting point anyway. */
   movec = offset_math(buffer, move, buffer.radComp, &ocX, &ocY);
+#ifdef DEBUG
+  printf("Compensated current (%4.2f, %4.2f)->(%4.2f, %4.2f)\n", ocX, ocY, movec.target.X, movec.target.Y);
+#endif
 
   // TODO: the logic here is somehow broken (inverting fixes G42 and breaks
   //       G41) while in both cases it injects a phantom freak move when
@@ -80,6 +98,15 @@ static void _do_radcomp(TGCodeMoveSpec move) {
     /* Trim/extend the first move to the intersection point */
     intersection_math(opX, opY, movep, ocX, ocY, movec, &movep.target.X,
                       &movep.target.Y);
+
+#ifdef DEBUG
+  printf("Trimmed/extended previous to (%4.2f, %4.2f)\n", movep.target.X, movep.target.Y);
+#endif
+
+  /* Make sure axes that are not supposed to move in this move (!) stay put */
+  if(!buffer.axesMoving.X) movep.target.X = buffer.target.X;
+  if(!buffer.axesMoving.Y) movep.target.Y = buffer.target.Y;
+  if(!buffer.axesMoving.Z) movep.target.Z = buffer.target.Z;
 
   /* Enqueue first (and maybe only) compensated move */
   _enqueue_nonull_move(movep, _next_head());

@@ -25,6 +25,9 @@ typedef struct {
   double feedValue;
   TGCodeCompSpec radComp;
   TGCodeCornerMode corner;
+  struct {
+    bool X, Y, Z;
+  } axesMoving;
 } TGCodeMoveSpec;
 
 /* Start the show */

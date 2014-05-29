@@ -109,7 +109,13 @@ bool done_parameters(void) {
 
   parameterStore = freopen(GCODE_PARAMETER_STORE, "w", parameterStore);
   for(i = 500; i < GCODE_PARAMETER_COUNT; i++)
-    if(!(parameters[i] < 0.0001) || !(parameters[i] > -0.0001)) {
+    /* Our parameter store defaults to 0.0E+0 on initialization so we wouldn't
+     * want to write a file full of zeros. Therefore we extend the standard's
+     * convention for integer-float equivalence to the special case of 0.0E+0:
+     * if the value stored in a parameter is closer than 0.0001 to 0.0E+0 then
+     * we coerce it to 0.0E+0 and subsequently don't save it */
+    if(parameters[i] > GCODE_INTEGER_THRESHOLD ||
+       parameters[i] < -GCODE_INTEGER_THRESHOLD) {
       fprintf(parameterStore, "%4d," GCODE_REAL_FORMAT "\n", i, parameters[i]);
       j++;
     }
