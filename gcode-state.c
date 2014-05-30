@@ -184,7 +184,7 @@ bool update_gcode_state(char *line) {
   //TODO: consider whether these three should be moved to currentGCodeState
   static double cX, cY, cZ;
   double wX, wY, wZ;
-  bool nullMove, toRFirst;
+  bool nullMove = true, toRFirst;
   static double lastZ;
 
   parseCache.line = line;
