@@ -85,7 +85,7 @@ static void _do_radcomp(TGCodeMoveSpec move) {
    * we only need the starting point anyway. */
   movec = offset_math(buffer, move, buffer.radComp, &ocX, &ocY);
 #ifdef DEBUG
-  printf("Compensated current (%4.2f, %4.2f)->(%4.2f, %4.2f)\n", ocX, ocY, movec.target.X, movec.target.Y);
+  GCODE_DEBUG("Compensated current (%4.2f, %4.2f)->(%4.2f, %4.2f)", ocX, ocY, movec.target.X, movec.target.Y);
 #endif
 
   // TODO: the logic here is somehow broken (inverting fixes G42 and breaks
@@ -100,10 +100,14 @@ static void _do_radcomp(TGCodeMoveSpec move) {
                       &movep.target.Y);
 
 #ifdef DEBUG
-  printf("Trimmed/extended previous to (%4.2f, %4.2f)\n", movep.target.X, movep.target.Y);
+  GCODE_DEBUG("Trimmed/extended previous to (%4.2f, %4.2f)", movep.target.X, movep.target.Y);
 #endif
 
   /* Make sure axes that are not supposed to move in this move (!) stay put */
+#ifdef DEBUG
+  GCODE_DEBUG("Movement deltas are (%4.2f, %4.2f, %4.2f)->(%4.2f, %4.2f, %4.2f)", movep.target.X, movep.target.Y, movep.target.Z, buffer.target.X, buffer.target.Y, buffer.target.Z);
+#endif
+
   if(!buffer.axesMoving.X) movep.target.X = buffer.target.X;
   if(!buffer.axesMoving.Y) movep.target.Y = buffer.target.Y;
   if(!buffer.axesMoving.Z) movep.target.Z = buffer.target.Z;
