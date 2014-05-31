@@ -397,37 +397,37 @@ void evaluate_unary_expression(char *line) {
   uint8_t fni;
   double arg, sar;
 
-  while((c = *(line++))) {
+  while((c = *line)) {
     if((isdigit(c) || c == '-') && seenWord) {
       line = skip_gcode_digits(line);
       seenWord = false;
-    }
-    if(isalpha(c)) {
+      continue;
+    } else if(isalpha(c)) {
       if(seenWord) {
-        sptr = line - 1; /* Remember where it started */
         fni = 0;
-        line--;
+        sptr = line; /* Remember where it started */
         do { fname[fni++] = *line; } while (isalpha(*(++line)));
         fname[fni] = '\0'; /* Function name at fname */
         arg = read_gcode_real(line); /* Function (1st) argument in arg */
         line = skip_gcode_digits(line);
         if(*line == '/') {/* Special case of ATAN */
-          sar = read_gcode_real(++line);
+          sar = read_gcode_real(++line); /* Skip slash */
           line = skip_gcode_digits(line);
         }
 
-        buf = (char *)calloc(1, strlen(line) + strlen("4.2f") + 1);
+        buf = (char *)calloc(1, strlen(line) + strlen(GCODE_REAL_FORMAT) + 1);
         strcpy(buf, GCODE_REAL_FORMAT);
         strcat(buf, line); /* Save the rest of the line */
         line = sptr; /* Rewind to where the function started */
         /* Overwrite with numeric result */
         snprintf(line, strlen(line), buf, _do_function(fname, arg, sar));
+        free((void *)buf);
         /* And go past it */
         line = skip_gcode_digits(line);
-        free((void *)buf);
-      }
-      else seenWord = true;
+        continue;
+      } else seenWord = true;
     }
+    line++;
   }
 
   return;

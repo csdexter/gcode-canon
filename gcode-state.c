@@ -140,16 +140,11 @@ static bool _refresh_gcode_parse_cache(char word) {
 /* Used to jump over parameters and their arguments after being processed.
  * Handles the corner case of having to jump over things like "#-10.23" */
 char *skip_gcode_digits(char *string) {
-  switch(*string) {
-    case '+':
-    case '-':
-      string++;
-      break;
-    case '#':
-      while(*(string++) && *string == '#');
-      break;
-  }
-  while(*(string++) && (isdigit(*string) || *string == '.'));
+  if(*string == '#') while(*(++string) == '#');
+  if(*string == '+' || *string == '-') string++;
+  if(isdigit(*string)) while (isdigit(*(++string)));
+  if(*string == '.') string++;
+  if(isdigit(*string)) while (isdigit(*(++string)));
 
   return string;
 }

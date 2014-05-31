@@ -6,6 +6,6 @@ O10
 (MSG,this is a message)
 (this is a comment)
 
-G00 0.000 0.000 0.000
+G00 X0.000 Y0.000 Z0.000
 
 %

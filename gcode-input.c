@@ -168,6 +168,9 @@ bool fetch_line_input(char *line) {
       continue;
     }
 
+    /* We don't really do anything with the program separator */
+    if(c == '%') continue;
+
     if(c == '[') { /* Evaluate expressions before any other processing */
       j = 0;
       l = 0;
@@ -190,7 +193,7 @@ bool fetch_line_input(char *line) {
       continue;
     }
 
-    if(line) line[i++] = c; /* Otherwise add to the line buffer */
+    if(line && c != EOF) line[i++] = c; /* Otherwise add to the line buffer */
   }
 
   if(line) {
