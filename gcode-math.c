@@ -239,9 +239,9 @@ TGCodeRadCompMode vector_side_math(double x1, double y1, double x2, double y2,
   if(fpclassify(side) == FP_ZERO)
     return GCODE_COMP_RAD_OFF;
   else if(signbit(side))
-    return GCODE_COMP_RAD_R;
-  else
     return GCODE_COMP_RAD_L;
+  else
+    return GCODE_COMP_RAD_R;
 }
 
 TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
@@ -289,10 +289,10 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
     else
       radius += radComp.offset * invert;
 
-    *originX = radius * cos(sAngle * GCODE_DEG2RAD);
-    *originY = radius * sin(sAngle * GCODE_DEG2RAD);
-    tM.target.X = radius * cos(eAngle * GCODE_DEG2RAD);
-    tM.target.Y = radius * sin(eAngle * GCODE_DEG2RAD);
+    *originX = tM.center.X + radius * cos(sAngle * GCODE_DEG2RAD);
+    *originY = tM.center.Y + radius * sin(sAngle * GCODE_DEG2RAD);
+    tM.target.X = tM.center.X + radius * cos(eAngle * GCODE_DEG2RAD);
+    tM.target.Y = tM.center.Y + radius * sin(eAngle * GCODE_DEG2RAD);
   } else {
     double angle = atan2(tM.target.Y - pM.target.Y,
                          tM.target.X - pM.target.X) * GCODE_RAD2DEG;
@@ -508,5 +508,5 @@ bool inside_corner_math(double oX, double oY, TGCodeMoveSpec prevMove,
 }
 
 bool moving_axis_math(double oX, double nX) {
-  return (fabs(oX - nX) < GCODE_INTEGER_THRESHOLD);
+  return (fabs(oX - nX) > GCODE_INTEGER_THRESHOLD);
 }

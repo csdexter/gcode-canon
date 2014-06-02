@@ -35,23 +35,25 @@ bool init_parameters(void *data) {
 
   parameterStore = (FILE *)data;
 
-  /* binary 0x00 may not result in float +0.0E+0, so do it by hand */
+  /* binary 0x00 may not always result in float +0.0E+0, so do it by hand */
   for(i = 0; i < GCODE_PARAMETER_COUNT; i++) parameters[i] = 0.0;
   for(i = 0; i < GCODE_PARAMETER_UPDATES; i++) {
     parameterUpdates[i].index = 0;
     parameterUpdates[i].value = 0.0;
   }
 
-  rewind(parameterStore);
-  i = 0;
-  while(fgets(line, 0xFF, parameterStore)) {
-    key = strtok(line, ","); // Force execution order
-    parameters[atoi(key)] = atof(strtok(NULL, ","));
-    i++;
-  }
-  free(line);
-  GCODE_DEBUG("%d parameters restored from non-volatile storage, %d available",
-              i, GCODE_PARAMETER_COUNT);
+  if(parameterStore) {
+    rewind(parameterStore);
+    i = 0;
+    while(fgets(line, 0xFF, parameterStore)) {
+      key = strtok(line, ","); // Force execution order
+      parameters[atoi(key)] = atof(strtok(NULL, ","));
+      i++;
+    }
+    free(line);
+    GCODE_DEBUG("%d parameters restored from non-volatile storage, %d available",
+                i, GCODE_PARAMETER_COUNT);
+  } else display_machine_message("WAR: Parameter store void, using defaults!");
 
   /* Now handle the special cases */
   parameters[0] = +0.0E+0; /* #0 is always zero */

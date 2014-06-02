@@ -50,11 +50,16 @@ bool init_input(void *data) {
 }
 
 bool rewind_input(void) {
-  rewind(input);
+  if(input) {
+    rewind(input);
+    GCODE_DEBUG("Program reset");
 
-  GCODE_DEBUG("Program reset");
+    return true;
+  } else {
+    display_machine_message("IER: No program to reset, ignoring request!");
 
-  return true;
+    return false;
+  }
 }
 
 bool seek_input(long offset) {
@@ -82,7 +87,13 @@ char fetch_char_input(void) {
       endOfSplice = true;
       free((void *)splice);
     }
-  } else result = fgetc(input);
+  } else {
+    if(input) result = fgetc(input);
+    else {
+      display_machine_message("IER: Unable to read input, assuming empty!");
+      result = EOF;
+    }
+  }
 
   return result;
 }
@@ -231,5 +242,11 @@ bool end_of_spliced_input(void) {
 }
 
 bool done_input(void) {
-  return fclose(input) ? false : true;
+  if(input) {
+    return fclose(input) ? false : true;
+  } else {
+    display_machine_message("IER: No input to close, ignoring request!");
+    return false;
+  }
+
 }

@@ -66,16 +66,15 @@ static void _do_radcomp(TGCodeMoveSpec move) {
   double opX, opY, ocX, ocY;
   TGCodeMoveSpec movep, movec;
   bool arcFlag;
+  memset(&movep, 0x00, sizeof(movep));
+  memset(&movec, 0x00, sizeof(movec));
 
 #ifdef DEBUG
   GCODE_DEBUG("Asked to compensate before (%4.2f, %4.2f, %4.2f)", move.target.X, move.target.Y, move.target.Z);
-#endif
-
-  movep.target = lastRawTarget;
-#ifdef DEBUG
-  GCODE_DEBUG("Natural previous (%4.2f, %4.2f)->(%4.2f, %4.2f)", movep.target.X, movep.target.Y, buffer.target.X, buffer.target.Y);
+  GCODE_DEBUG("Natural previous (%4.2f, %4.2f)->(%4.2f, %4.2f)", lastRawTarget.X, lastRawTarget.Y, buffer.target.X, buffer.target.Y);
 #endif
   /* (lastRawTarget -> buffer) is the first segment */
+  movep.target = lastRawTarget;
   movep = offset_math(movep, buffer, buffer.radComp, &opX, &opY);
 #ifdef DEBUG
   GCODE_DEBUG("Compensated previous (%4.2f, %4.2f)->(%4.2f, %4.2f)", opX, opY, movep.target.X, movep.target.Y);
@@ -105,12 +104,12 @@ static void _do_radcomp(TGCodeMoveSpec move) {
 
   /* Make sure axes that are not supposed to move in this move (!) stay put */
 #ifdef DEBUG
-  GCODE_DEBUG("Movement deltas are (%4.2f, %4.2f, %4.2f)->(%4.2f, %4.2f, %4.2f)", movep.target.X, movep.target.Y, movep.target.Z, buffer.target.X, buffer.target.Y, buffer.target.Z);
+  GCODE_DEBUG("Movement deltas are (%4.2f, %4.2f, %4.2f)->(%4.2f, %4.2f, %4.2f)", lastCompTarget.X, lastCompTarget.Y, lastCompTarget.Z, movep.target.X, movep.target.Y, movep.target.Z);
 #endif
 
-  if(!buffer.axesMoving.X) movep.target.X = buffer.target.X;
-  if(!buffer.axesMoving.Y) movep.target.Y = buffer.target.Y;
-  if(!buffer.axesMoving.Z) movep.target.Z = buffer.target.Z;
+  if(!buffer.axesMoving.X) movep.target.X = lastCompTarget.X;
+  if(!buffer.axesMoving.Y) movep.target.Y = lastCompTarget.Y;
+  if(!buffer.axesMoving.Z) movep.target.Z = lastCompTarget.Z;
 
   /* Enqueue first (and maybe only) compensated move */
   _enqueue_nonull_move(movep, _next_head());
