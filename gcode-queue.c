@@ -87,26 +87,19 @@ static void _do_radcomp(TGCodeMoveSpec move) {
   GCODE_DEBUG("Compensated current (%4.2f, %4.2f)->(%4.2f, %4.2f)", ocX, ocY, movec.target.X, movec.target.Y);
 #endif
 
-  // TODO: the logic here is somehow broken (inverting fixes G42 and breaks
-  //       G41) while in both cases it injects a phantom freak move when
-  //       switching to G40
-  arcFlag = (move.corner == GCODE_CORNER_CHAMFER) ||
-            inside_corner_math(lastRawTarget.X, lastRawTarget.Y, buffer, move,
-                               buffer.radComp);
-  if(arcFlag)
+  arcFlag = inside_corner_math(lastRawTarget.X, lastRawTarget.Y, buffer, move,
+                               buffer.radComp) ||
+            (move.corner == GCODE_CORNER_CHAMFER);
+  if(arcFlag) {
     /* Trim/extend the first move to the intersection point */
     intersection_math(opX, opY, movep, ocX, ocY, movec, &movep.target.X,
                       &movep.target.Y);
-
 #ifdef DEBUG
-  GCODE_DEBUG("Trimmed/extended previous to (%4.2f, %4.2f)", movep.target.X, movep.target.Y);
+    GCODE_DEBUG("Trimmed/extended previous to (%4.2f, %4.2f)", movep.target.X, movep.target.Y);
 #endif
+  }
 
   /* Make sure axes that are not supposed to move in this move (!) stay put */
-#ifdef DEBUG
-  GCODE_DEBUG("Movement deltas are (%4.2f, %4.2f, %4.2f)->(%4.2f, %4.2f, %4.2f)", lastCompTarget.X, lastCompTarget.Y, lastCompTarget.Z, movep.target.X, movep.target.Y, movep.target.Z);
-#endif
-
   if(!buffer.axesMoving.X) movep.target.X = lastCompTarget.X;
   if(!buffer.axesMoving.Y) movep.target.Y = lastCompTarget.Y;
   if(!buffer.axesMoving.Z) movep.target.Z = lastCompTarget.Z;

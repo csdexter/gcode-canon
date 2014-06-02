@@ -236,12 +236,12 @@ TGCodeRadCompMode vector_side_math(double x1, double y1, double x2, double y2,
     double x3, double y3) {
   double side = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
 
-  if(fpclassify(side) == FP_ZERO)
+  if(fabs(side) < GCODE_INTEGER_THRESHOLD)
     return GCODE_COMP_RAD_OFF;
   else if(signbit(side))
-    return GCODE_COMP_RAD_L;
-  else
     return GCODE_COMP_RAD_R;
+  else
+    return GCODE_COMP_RAD_L;
 }
 
 TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
@@ -284,7 +284,7 @@ TGCodeMoveSpec offset_math(TGCodeMoveSpec pM, TGCodeMoveSpec tM,
       cside = vector_side_math(pM.target.X, pM.target.Y, tM.target.X,
                                tM.target.Y, tM.center.X, tM.center.Y);
 
-    if(cside == radComp.mode)
+    if(cside != radComp.mode)
       radius -= radComp.offset * invert;
     else
       radius += radComp.offset * invert;
