@@ -110,7 +110,7 @@ static bool stillRunning;
 
 static TGCodeMotionMode _map_move_to_motion(TGCodeMoveMode mode, bool *ccw) {
   switch(mode) {
-    case GCODE_MOVE_RAPID + 100: /* Returned as 100 by have_gcode_word() */
+    case GCODE_MOVE_RAPID_AS_RETURNED: /* Returned as 100 by have_gcode_word() */
       return RAPID;
     case GCODE_MOVE_FEED:
       return LINEAR;

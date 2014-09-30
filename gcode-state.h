@@ -56,7 +56,8 @@ typedef enum {
   GCODE_MODE_ARC_CW = 2,
   GCODE_MODE_ARC_CCW = 3,
   GCODE_MODE_CIRCLE_CW = 12,
-  GCODE_MODE_CIRCLE_CCW = 13
+  GCODE_MODE_CIRCLE_CCW = 13,
+  GCODE_MOVE_RAPID_AS_RETURNED = 100
 } TGCodeMoveMode;
 
 typedef enum {
@@ -85,7 +86,8 @@ typedef enum {
   GCODE_STOP_E = 36,
   GCODE_APC_1 = 57,
   GCODE_APC_2 = 58,
-  GCODE_APC_SWAP = 60
+  GCODE_APC_SWAP = 60,
+  GCODE_STOP_COMPULSORY_AS_RETURNED = 100
 } TGCodeStopMode;
 
 typedef enum {
