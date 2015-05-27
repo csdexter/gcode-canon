@@ -109,7 +109,7 @@ bool fetch_line_input(char *line) {
   int c = '\0';
   uint8_t i = 0, j, l;
   bool ignore = false;
-  char commsg[0xFF - 5]; /* max line length - 2 parentheses and "MSG" */
+  char commsg[0xFF - 2]; /* max line length - 2 parentheses */
 
   while(c != EOF) {
     c = toupper(fetch_char_input());
