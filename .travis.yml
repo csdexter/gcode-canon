@@ -3,6 +3,6 @@ compiler:
   - clang
   - gcc
 script:
-  - bash -c 'make all'
-  - bash -c 'make test'
+  - make all
+  - make test
 

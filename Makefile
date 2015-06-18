@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with gcode-canon. If not, see <http://www.gnu.org/licenses/>.
 
+# We need an actual shell
+SHELL=bash
+
 SOURCES:=$(wildcard *.c)
 OBJECTS:=$(patsubst %.c,%.o,$(SOURCES))
 HEADERS:=$(wildcard *.h)
