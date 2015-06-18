@@ -1,4 +1,4 @@
-G-Code Canonical Interpreter
+G-Code Canonical Interpreter ![Travis CI build status](https://travis-ci.org/csdexter/gcode-canon.svg?branch=master "Build status at HEAD, as reported by Travis CI")
 ============================
 
 Copyright (C) 2012-2015, Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
