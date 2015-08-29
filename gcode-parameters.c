@@ -50,10 +50,10 @@ bool init_parameters(void *data) {
       parameters[atoi(key)] = atof(strtok(NULL, ","));
       i++;
     }
-    free(line);
     GCODE_DEBUG("%d parameters restored from non-volatile storage, %d available",
                 i, GCODE_PARAMETER_COUNT);
   } else display_machine_message("WAR: Parameter store void, using defaults!");
+  free(line);
 
   /* Now handle the special cases */
   parameters[0] = +0.0E+0; /* #0 is always zero */
@@ -69,7 +69,7 @@ double fetch_parameter(uint16_t index) {
 
 bool update_parameter(uint16_t index, double newValue) {
   // #0 is readonly and there's only 5400 of them
-  if(!index || index > GCODE_PARAMETER_COUNT) return false;
+  if(!index || index > GCODE_PARAMETER_COUNT - 1) return false;
 
   if(parameterUpdateCount < GCODE_PARAMETER_UPDATES) {
     parameterUpdateCount++;
@@ -86,7 +86,7 @@ bool update_parameter(uint16_t index, double newValue) {
 
 bool set_parameter(uint16_t index, double newValue) {
   // #0 is readonly and there's only 5400 of them
-  if(!index || index > GCODE_PARAMETER_COUNT) return false;
+  if(!index || index > GCODE_PARAMETER_COUNT - 1) return false;
 
   parameters[index] = newValue;
 

@@ -24,9 +24,10 @@ double do_G_coordinate_math(const TGCodeCoordinateInfo *system, double input,
         relative_math(
             system_math(
                 input, (system->current == GCODE_MCS), offset,
-                fetch_parameter(
-                    GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) *
-                    GCODE_PARM_WCS_SIZE + axis)),
+                (system->current == GCODE_MCS ? 0.0 :
+                    fetch_parameter(
+                        GCODE_PARM_FIRST_WCS + (system->current - GCODE_WCS_1) *
+                        GCODE_PARM_WCS_SIZE + axis))),
             previous, (system->absolute == GCODE_ABSOLUTE)),
         (system->units == GCODE_UNITS_INCH));
   else return previous;

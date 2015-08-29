@@ -13,3 +13,6 @@
 
 # Test outputs
 tests/*.result
+
+# Coverity output
+cov-int/*

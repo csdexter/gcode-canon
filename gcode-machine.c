@@ -107,6 +107,8 @@ bool move_machine_line(double X, double Y, double Z, TGCodeFeedMode feedMode,
                                                   pow(current.Z - Z, 2)));
   move.radComp = radComp;
   move.corner = corner;
+  /* Fully initialize the struct, keeps bugs away ;-) */
+  move.ccw = false;
 
   if(F == GCODE_MACHINE_FEED_TRAVERSE)
     GCODE_DEBUG("Traverse move to V(%4.2fmm, %4.2fmm, %4.2fmm)", X, Y, Z)
@@ -206,6 +208,8 @@ bool move_machine_home(TGCodeCycleMode mode, double X, double Y, double Z) {
       return false;
   }
   noComp.mode = GCODE_COMP_RAD_OFF;
+  /* Fully initialize the struct, keeps bugs away ;-) */
+  noComp.offset = 0.0;
 
   move_machine_line(X, Y, Z, GCODE_FEED_PERMINUTE, GCODE_MACHINE_FEED_TRAVERSE,
                     noComp, GCODE_CORNER_CHAMFER);

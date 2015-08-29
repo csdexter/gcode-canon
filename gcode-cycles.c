@@ -36,7 +36,7 @@ static bool _add_generated_line(const char *format, ...) {
   va_end(ap);
 
   if((strlen(slices[curSlice]) + strlen(slices[0])) >= GCODE_CYCLE_BUFSLICE) {
-    if(curSlice < GCODE_CYCLE_MAXSLICES)
+    if(curSlice < GCODE_CYCLE_MAXSLICES - 1)
       slices[++curSlice] = (char *)calloc(GCODE_CYCLE_BUFSLICE, 1);
     else {
       display_machine_message("PER: Canned cycle injection buffer overflow!");
@@ -84,7 +84,8 @@ bool init_cycles(void *data) {
 }
 
 char *generate_cycles(TGCodeState state, double X, double Y, double Z) {
-  bool feedRetract, firstTime = true, fixedR = false;
+  //TODO: factor feedRetract out as it's superfluous.
+  bool feedRetract = false, firstTime = true, fixedR = false;
   uint16_t peckSteps;
   double extraMove, howFarDown = 0.0;
 
@@ -128,8 +129,6 @@ char *generate_cycles(TGCodeState state, double X, double Y, double Z) {
         if(state.cycle == GCODE_CYCLE_BORING_ND_NS ||
            state.cycle == GCODE_CYCLE_BORING_WD_NS)
           feedRetract = true;
-        else
-          feedRetract = false;
         break;
       case GCODE_CYCLE_TAP_LH:
       case GCODE_CYCLE_TAP_RH:
@@ -153,7 +152,6 @@ char *generate_cycles(TGCodeState state, double X, double Y, double Z) {
         /* Start spindle */
         _add_generated_line("M%02d\n",
                             (state.cycle == GCODE_CYCLE_TAP_LH ? 4 : 3));
-        feedRetract = false;
         break;
       case GCODE_CYCLE_BORING_BACK:
         _add_generated_line("G91 G00 X" GCODE_REAL_FORMAT " Y" GCODE_REAL_FORMAT "\n",
@@ -222,7 +220,6 @@ char *generate_cycles(TGCodeState state, double X, double Y, double Z) {
           _add_generated_line("G01 Z" GCODE_REAL_FORMAT "\n", -extraMove);
         /* Restore previous measurement mode */
         _add_generated_line("G%02d\n", state.system.absolute);
-        feedRetract = false;
         break;
     }
     /* Final move */

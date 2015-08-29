@@ -72,10 +72,12 @@ static double _do_function(char *fname, double arg1, double arg2) {
 static char *_next_token(char *expression, TGCodeExpressionToken *token) {
   double arg1, arg2;
 
-  if(!*expression) {
-    token->tType = GCODE_ETT_CLOSE;
+  /* make sure *token is always initialized */
+  token->tType = GCODE_ETT_CLOSE;
+  token->tValue = 0.0;
+
+  if(!*expression)
     return expression;
-  }
 
   switch(*(expression++)) {
     case '0':

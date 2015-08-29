@@ -697,6 +697,7 @@ bool update_gcode_state(char *line) {
     // Set current status
     programState.macroCall = currentGCodeState.macroCall;
     // We don't care about this repeatCount, the next one is checked
+    programState.repeatCount = 0;
     stacks_push_program(&programState);
     seek_input(get_program_input(get_gcode_word_integer('P')));
     // Reset our status
