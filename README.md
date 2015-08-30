@@ -1,4 +1,4 @@
-G-Code Canonical Interpreter ![Travis CI build status](https://travis-ci.org/csdexter/gcode-canon.svg?branch=master "Build status at HEAD, as reported by Travis CI") ![Coverity Scan build status](https://scan.coverity.com/projects/6188/badge.svg "Code static analysis status at HEAD, as reported by Coverity")
+G-Code Canonical Interpreter [![Travis CI build status](https://travis-ci.org/csdexter/gcode-canon.svg?branch=master "Build status at HEAD, as reported by Travis CI")](https://travis-ci.org/csdexter/gcode-canon) [![Coverity Scan build status](https://scan.coverity.com/projects/6188/badge.svg "Code static analysis status at HEAD, as reported by Coverity")](https://scan.coverity.com/projects/csdexter-gcode-canon?tab=overview)
 ============================
 
 Copyright (C) 2012-2015, Radu - Eosif Mihailescu <radu.mihailescu@linux360.ro>
