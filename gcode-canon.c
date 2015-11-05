@@ -20,6 +20,7 @@
 #include "gcode-stacks.h"
 #include "gcode-cycles.h"
 #include "gcode-queue.h"
+#include "gcode-checker.h"
 
 
 int main(int argc, char *argv[]) {
@@ -32,17 +33,21 @@ int main(int argc, char *argv[]) {
   init_stacks(NULL);
   init_tools(NULL);
   init_input(inputFile);
+  //TODO: align API, add done_gcode_state().
   init_gcode_state(NULL);
   init_cycles(NULL);
+  //TODO: align API, make it take a pointer to init data.
   init_queue();
+  init_checker(NULL);
 
   while(machine_running() && gcode_running() && fetch_line_input(line)) {
-    update_gcode_state(line);
+    if(gcode_check(line)) update_gcode_state(line);
     move_machine_queue();
   }
   /* Flush movement queue */
   while(move_machine_queue());
 
+  done_checker();
   done_queue();
   done_cycles();
   done_input();

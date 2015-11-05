@@ -39,7 +39,7 @@ bool init_input(void *data) {
 
   GCODE_DEBUG("Input stream up, %d program table entries available",
               GCODE_PROGRAM_CAPACITY);
-  /* Protect against numbering system strangeness on other locales. Also makes
+  /* Protect against numbering system strangeness in other locales. Also makes
    * "upper case" have a very well defined meaning */
   setlocale(LC_ALL, "C");
   display_machine_message("STA: Scanning input for programs (O words)");
@@ -173,7 +173,13 @@ bool fetch_line_input(char *line) {
           programCount++;
         } else display_machine_message("PER: Program table overflow!");
       } else {
-        //TODO: support N
+        /* The standard is quite ambivalent about N: it's not mandatory and
+         * serves no universal (i.e. cross-vendor) purpose. Even the arguments
+         * can be duplicated or be given out of order! The only thing we can
+         * check for is that we have indeed been given a positive non-zero
+         * integer as argument. */
+        if(atol(commsg) <= 0)
+          display_machine_message("SER: negative or zero argument to N word!");
       }
 
       continue;

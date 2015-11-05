@@ -68,22 +68,25 @@
  *         if(cmsc) cmsc = false, pop_parameters() [pop_parameters() calls commit internally]
  */
 }
-* G-Code parsing results go into a two-level FIFO for doing radius compensation (must find a way to serialize sequence points too)
-  Output of the compensation FIFO looks like (to_dest, top_speed) or (machine_event) ...
-  ... and is then send through another two-level FIFO for doing corner compensation ...
-  ... and is then processed into movement profiles (t1, t2, t3, t4, t5, t6, t7) and
-      (machine_event) records into the movement queue.
+* G-Code parsing results go into a two-level FIFO for doing radius compensation
+ (must find a way to serialize sequence points too)
+  Output of the compensation FIFO looks like (to_dest, top_speed) or
+  (machine_event) ...
+  ... and is then sent through another two-level FIFO for doing corner
+  compensation ...
+  ... and is then processed into movement profiles (t1, t2, t3, t4, t5, t6, t7)
+  and (machine_event) records into the movement queue.
   IF NOT EXACT_STOP_CHECK:
     Every time a new (tn) record gets added to the 1st queue, all the records
-        from the last (machine_event) up to it get reprocessed by adjusting their
-        tn values (sometimes to zero) so that a continuous move results.
+        from the last (machine_event) up to it get reprocessed by adjusting 
+        their tn values (sometimes to zero) so that a continuous move results.
   The (tn) tuples are then sent for playback and decomposition into axis values,
-      which works by running time forward in quanta and calculating the coordinate
-      using a different formula for x = f(t) depending on which n is currently
-      processed from the (tn) tuple. After x across the movement vector is known,
-      it is decomposed into axis values (X, Y, Z) which are compared with the
-      last known axis values and any difference results in a step being output
-      for the corresponding axis.
+      which works by running time forward in quanta and calculating the
+      coordinate using a different formula for x = f(t) depending on which n is
+      currently processed from the (tn) tuple. After x across the movement
+      vector is known, it is decomposed into axis values (X, Y, Z) which are
+      compared with the last known axis values and any difference results in a
+      step being output for the corresponding axis.
   NOTE: this is especially interesting for circular interpolation which will
       also be treated as if it were linear motion until the decomposition step.
   NOTE: this means our CPU must be fast enough to perform the most complex
@@ -102,7 +105,7 @@
   NOTE: due to the way playback works (with a fixed table of fn(t)), we will
       need to distinguish between overriding up or down: up will result in a new
       move beginning right now whereas down will result in a new move beginning
-      in the future, at exactly the distance needed to decellerate to the new
+      in the future, at exactly the distance needed to decelerate to the new
       speed. If there isn't enough room, the new override setting will take
       effect from the beginning of the next move in the queue which will be
       overwritten in place.
@@ -111,4 +114,4 @@
       times. For example, if overriding up and we're in the acceleration phase,
       no immediate change will occur (the slope will continue upwards a little
       bit longer to match requested new top speed). Same for overriding down
-      during the decelleration phase.
+      during the deceleration phase.

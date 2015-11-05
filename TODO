@@ -3,3 +3,5 @@
 * fix all remaining weird stuff in NOTES (such as being unable to parse G00.000 as G00)
 * add second queue for physical movement, model entries after Secondary MCU Commands document
 * start adding kinematic stuff around move_machine_queue (acceleration planning, contour control etc.)
+* try and remove uses of ungetc()
+* expand program table support beyond uint16_t (the standard says O can go to 99999)

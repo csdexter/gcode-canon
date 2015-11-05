@@ -757,26 +757,21 @@ bool update_gcode_state(char *line) {
 uint32_t read_gcode_integer(char *line) {
   if(line[0] == '#')
     return (uint32_t)fetch_parameter(read_gcode_integer(&line[1]));
-  else {
-    char saveChar = '\0', *savePtr;
-    uint32_t result;
-
-    savePtr = skip_gcode_digits(line);
-    if(*savePtr) {
-      saveChar = *savePtr;
-      *savePtr = '\0';
-    }
-    result = strtol(line, (char **)NULL, 10);
-    if(saveChar) *savePtr = saveChar;
-
-    return result;
-  }
+  else
+    /* atol() calls strtol() with an explicit base of 10, therefore (1) any
+     * non-digit character will stop the conversion and (2) an initial 0 will
+     * not trigger octal decoding. */
+    return atol(line);
 }
 
 /* This handles using a parameter in lieu of a numeric value transparently */
 double read_gcode_real(char *line) {
   if(line[0] == '#') return fetch_parameter(read_gcode_integer(&line[1]));
   else {
+    /* This is needed because strtod() guesses at the base of the number it
+     * parses (yes, there is such a thing as a hex-encoded floating point
+     * number!) so we need to explicitly force it to only look at what we fed
+     * it by terminating the string where the G-Code-style number ends. */
     char saveChar = '\0', *savePtr;
     double result;
 
