@@ -284,11 +284,11 @@ bool init_gcode_state(void *data);
 bool update_gcode_state(char *line);
 /* Returns string pointing at the first non-numeric-value character after the
  * initial pointer value. */
-char *skip_gcode_digits(char *string);
+const char *skip_gcode_digits(const char *string);
 /* Read from line and interpret as number transparently handling parameter
  * references; return number */
-double read_gcode_real(char *line);
-uint32_t read_gcode_integer(char *line);
+double read_gcode_real(const char *line);
+uint32_t read_gcode_integer(const char *line);
 /* If called with 2 arguments and argc of 0, return true if said word was
  * present in the line.
  * If called with 3 arguments and argc of 1, return true if said word was

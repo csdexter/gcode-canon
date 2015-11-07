@@ -12,8 +12,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 #include <locale.h>
 
@@ -164,7 +164,7 @@ bool fetch_line_input(char *line) {
       commsg[j] = '\0';
       push_char_input(d); /* First non-digit character has to go back */
 
-      if(c == 'O') {/* We ignore N and store a bookmark for O for now */
+      if(c == 'O') {
         if(programCount < GCODE_PROGRAM_CAPACITY) {
           /* Better mess with precision than signedness */
           programs[programCount].program = (uint16_t)atol(commsg);

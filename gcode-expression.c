@@ -36,7 +36,7 @@ static TGCodeExpressionPrecedence operatorPrecedence[] = {GCODE_EOP_THIRD,
                                                           GCODE_EOP_FIRST};
 
 
-static double _do_expression(char **expression); /* Forward declaration */
+static double _do_expression(const char **expression); /* Forward declaration */
 
 static double _do_function(char *fname, double arg1, double arg2) {
   if(!strcasecmp(fname, "ABS"))
@@ -69,7 +69,8 @@ static double _do_function(char *fname, double arg1, double arg2) {
   return 0;
 }
 
-static char *_next_token(char *expression, TGCodeExpressionToken *token) {
+static const char *_next_token(const char *expression,
+                               TGCodeExpressionToken *token) {
   double arg1, arg2;
 
   /* make sure *token is always initialized */
@@ -293,13 +294,13 @@ static double _do_operation(TGCodeExpressionOperator op, double left,
   return NAN;
 }
 
-static double _do_expression(char **expression) {
+static double _do_expression(const char **expression) {
   TGCodeExpressionToken token;
   double left = NAN, right = +0.0E+0;
   TGCodeExpressionOperator operator = {GCODE_EO_PLUS,
                                        operatorPrecedence[GCODE_EO_PLUS]};
   bool skipOp = false, skipRight = false;
-  char *subexp = NULL, *tep;
+  const char *subexp = NULL, *tep;
 
   /* First argument */
   *expression = _next_token(*expression, &token);
@@ -389,7 +390,7 @@ static double _do_expression(char **expression) {
   return NAN;
 }
 
-double evaluate_expression(char *expression) {
+double evaluate_expression(const char *expression) {
   return _do_expression(&expression);
 }
 
@@ -401,7 +402,8 @@ void evaluate_unary_expression(char *line) {
 
   while((c = *line)) {
     if((isdigit(c) || c == '-') && seenWord) {
-      line = skip_gcode_digits(line);
+      /* skip_gcode_digits() is a const domain and we're non-const */
+      line = (char *)skip_gcode_digits(line);
       seenWord = false;
       continue;
     } else if(isalpha(c)) {
@@ -411,10 +413,10 @@ void evaluate_unary_expression(char *line) {
         do { fname[fni++] = *line; } while (isalpha(*(++line)));
         fname[fni] = '\0'; /* Function name at fname */
         arg = read_gcode_real(line); /* Function (1st) argument in arg */
-        line = skip_gcode_digits(line);
+        line = (char *)skip_gcode_digits(line);
         if(*line == '/') {/* Special case of ATAN */
           sar = read_gcode_real(++line); /* Skip slash */
-          line = skip_gcode_digits(line);
+          line = (char *)skip_gcode_digits(line);
         }
 
         buf = (char *)calloc(1, strlen(line) + strlen(GCODE_REAL_FORMAT) + 1);
@@ -425,7 +427,7 @@ void evaluate_unary_expression(char *line) {
         snprintf(line, strlen(line), buf, _do_function(fname, arg, sar));
         free((void *)buf);
         /* And go past it */
-        line = skip_gcode_digits(line);
+        line = (char *)skip_gcode_digits(line);
         continue;
       } else seenWord = true;
     }

@@ -12,12 +12,16 @@
 #define GCODE_CHECKER_H_
 
 #include <stdbool.h>
+#include <stdint.h>
+
+typedef struct {
+} TGCodeCheckerState;
 
 bool init_checker(void *data);
 void done_checker(void);
 /* Check the validity of the contents of line according to G-Code syntax and
  * current state of the interpreter. Returns true if valid, false otherwise. */
-bool gcode_check(char *line);
+bool gcode_check(const char *line);
 /* Resets the state of the interpreter so that the next call to gcode_check()
  * behaves as if it were the first G-Code line it ever saw. */
 void reset_checker(void);

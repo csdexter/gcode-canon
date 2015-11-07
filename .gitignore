@@ -16,3 +16,4 @@ tests/*.result
 
 # Coverity output
 cov-int/*
+

@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <math.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -139,7 +140,7 @@ static bool _refresh_gcode_parse_cache(char word) {
 
 /* Used to jump over parameters and their arguments after being processed.
  * Handles the corner case of having to jump over things like "#-10.23" */
-char *skip_gcode_digits(char *string) {
+const char *skip_gcode_digits(const char *string) {
   if(*string == '#') while(*(++string) == '#');
   if(*string == '+' || *string == '-') string++;
   if(isdigit(*string)) while (isdigit(*(++string)));
@@ -754,7 +755,7 @@ bool update_gcode_state(char *line) {
 }
 
 /* This handles using a parameter in lieu of a numeric value transparently */
-uint32_t read_gcode_integer(char *line) {
+uint32_t read_gcode_integer(const char *line) {
   if(line[0] == '#')
     return (uint32_t)fetch_parameter(read_gcode_integer(&line[1]));
   else
@@ -765,23 +766,24 @@ uint32_t read_gcode_integer(char *line) {
 }
 
 /* This handles using a parameter in lieu of a numeric value transparently */
-double read_gcode_real(char *line) {
+double read_gcode_real(const char *line) {
   if(line[0] == '#') return fetch_parameter(read_gcode_integer(&line[1]));
   else {
     /* This is needed because strtod() guesses at the base of the number it
      * parses (yes, there is such a thing as a hex-encoded floating point
      * number!) so we need to explicitly force it to only look at what we fed
      * it by terminating the string where the G-Code-style number ends. */
-    char saveChar = '\0', *savePtr;
+    char *theNumber;
+    const char *endPtr;
     double result;
 
-    savePtr = skip_gcode_digits(line);
-    if(*savePtr) {
-      saveChar = *savePtr;
-      *savePtr = '\0';
-    }
-    result = strtod(line, (char **)NULL);
-    if(saveChar) *savePtr = saveChar;
+    endPtr = skip_gcode_digits(line);
+    theNumber = calloc(endPtr - line + 1, 1);
+    strncpy(theNumber, line, endPtr - line);
+
+    result = strtod(theNumber, (char **)NULL);
+
+    free(theNumber);
 
     return result;
   }
@@ -848,7 +850,7 @@ uint32_t get_gcode_word_integer_default(char word, uint32_t defVal) {
 
 /* This handles parameter assignments */
 bool process_gcode_parameters(void) {
-  char *cchr;
+  const char *cchr;
   uint16_t param;
   double value = NAN;
 
